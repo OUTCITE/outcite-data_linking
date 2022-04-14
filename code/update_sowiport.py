@@ -15,8 +15,8 @@ _max_scroll_tries =   2;
 _scroll_size      = 100;
 _requestimeout    =  60;
 
-_recheck = False;
-
+_recheck = True;
+_retest  = False;
 _resolve = False;
 
 #====================================================================================
@@ -33,7 +33,7 @@ def get_url(refobjects,field,id_field):
         print(refobjects[i]);
         url = None;
         ID  = None;
-        if id_field in refobjects[i]:
+        if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
             url = "https://search.gesis.org/publication/"+refobjects[i][id_field];
         else:
             #print(id_field,'not in reference.');

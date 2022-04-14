@@ -17,8 +17,8 @@ _scroll_size      =  25;
 _requestimeout    =  60;
 
 _recheck = True;
-
-_resolve = False;
+_retest  = False;
+_resolve = True;
 
 #====================================================================================
 _index_m    = 'dnb'; # Not actually required for crossref as the id is already the doi
@@ -33,7 +33,7 @@ def get_url(refobjects,field,id_field): #TODO: For some reason the old incorreec
     for i in range(len(refobjects)):
         url = None;
         ID  = None;
-        if id_field in refobjects[i]:
+        if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
             page    = _client_m.search(index=_index_m, body={"query":{"term":{"id":refobjects[i][id_field]}}} );
             dnb_ids = page['hits']['hits'][0]['_source']['ids'] if len(page['hits']['hits'])>0 and 'ids' in page['hits']['hits'][0]['_source'] and len(page['hits']['hits'][0]['_source']['ids'])>0 else [];
             dnb_id  = None;

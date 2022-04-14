@@ -15,9 +15,9 @@ _max_scroll_tries =   2;
 _scroll_size      =  25;
 _requestimeout    =  60;
 
-_recheck = False;
-
-_resolve = False;
+_recheck = True;
+_retest  = False;
+_resolve = True;
 
 #====================================================================================
 _index_m    = 'crossref'; # Not actually required for crossref as the id is already the doi
@@ -32,12 +32,12 @@ def get_url(refobjects,field,id_field):
     for i in range(len(refobjects)):
         url = None;
         ID  = None;
-        if id_field in refobjects[i]:
+        if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
             url = doi2url(refobjects[i][id_field]);
         else:
             #print(id_field,'not in reference.');
             continue;
-        ID = url if url else None;
+        ID = check(url,_resolve) if url else None;
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);

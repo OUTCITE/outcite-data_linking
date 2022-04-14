@@ -17,7 +17,7 @@ _scroll_size      =  25;
 _requestimeout    =  60;
 
 _recheck = True;
-
+_retest  = False;
 _resolve = True;
 
 #====================================================================================
@@ -34,7 +34,7 @@ def get_url(refobjects,field,id_field):
         #print(refobjects[i]);
         url = None;
         ID  = None;
-        if id_field in refobjects[i]:
+        if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
             opa_id = refobjects[i][id_field];
             page   = _client_m.search(index=_index_m, body={"query":{"term":{"id":opa_id}}} );
             doi    = doi2url(page['hits']['hits'][0]['_source']['doi']) if len(page['hits']['hits'])>0 and 'doi' in page['hits']['hits'][0]['_source'] else None;

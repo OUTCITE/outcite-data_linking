@@ -3,19 +3,16 @@ from elasticsearch import Elasticsearch as ES
 import requests
 import time
 
-_max_extract_time = 0.5; #minutes
+_max_extract_time = 10; #minutes
 _max_scroll_tries = 2;
 _scroll_size      = 100;
 
-_refobjs = [    'anystyle_references_from_cermine_fulltext',
-                'anystyle_references_from_cermine_refstrings',
-                'anystyle_references_from_grobid_fulltext',
-                'anystyle_references_from_grobid_refstrings',
-                'anystyle_references_from_gold_fulltext',
-                'anystyle_references_from_gold_refstrings',
-                'cermine_references_from_cermine_xml',
-                'cermine_references_from_grobid_refstrings',
-                'cermine_references_from_gold_refstrings',
+_refobjs = [    #'anystyle_references_from_cermine_fulltext',
+                #'anystyle_references_from_cermine_refstrings',
+                #'anystyle_references_from_grobid_fulltext',
+                'anystyle_references_from_grobid_refstrings',   #                'anystyle_references_from_gold_fulltext',
+                #'cermine_references_from_cermine_xml',          #                'anystyle_references_from_gold_refstrings',
+                #'cermine_references_from_grobid_refstrings',    #                'cermine_references_from_gold_refstrings',
                 'grobid_references_from_grobid_xml' ];
 
 _ids = None;#["EiGe_1976_0001"];
@@ -31,7 +28,7 @@ def check(url,RESOLVE=False):
             print('----> Could not resolve URL due to 404',url);
             return None;
     except Exception as e:
-        print('ERROR:',e);
+        print('ERROR:',e, file=sys.stderr);
         print('----> Could not resolve URL due to above exception',url);
         return None;
     # page cannot be None unless exception occured
@@ -59,7 +56,7 @@ def doi2url_(doi):
             print(doi,url);
             break;
         except Exception as e:
-            print(e);
+            print(e, file=sys.stderr);
             if tries > _max_scroll_tries:
                 print(e);
                 print('Problem obtaining URL for doi '+doi+'. Giving up.');
@@ -72,7 +69,7 @@ def doi2url_(doi):
 def search(field,id_field,index,recheck,get_url):
     #----------------------------------------------------------------------------------------------------------------------------------
     body     = { '_op_type': 'update', '_index': index, '_id': None, '_source': { 'doc': { 'has_'+field: True, field: None } } };
-    scr_body = { "query": { "ids": { "values": _ids } } } if _ids else {'query':{'bool':{'must_not':{'term':{'has_'+field+'s': True}}}}} if not recheck else {'query':{'bool':{'must':{'term':{'has_'+id_field+'s': True}}}}};
+    scr_body = { "query": { "ids": { "values": _ids } } } if _ids else {'query':{'bool':{'must_not':{'term':{'has_'+field: True}}}}} if not recheck else {'query':{'bool':{'must':{'term':{'has_'+id_field+'s': True}}}}};
     #print(scr_body);
     #----------------------------------------------------------------------------------------------------------------------------------
     client   = ES(['localhost'],scheme='http',port=9200,timeout=60);
@@ -103,7 +100,7 @@ def search(field,id_field,index,recheck,get_url):
                 returned  = len(page['hits']['hits']);
                 page_num += 1;
             except Exception as e:
-                print(e);
+                print(e, file=sys.stderr);
                 print('\n[!]-----> Some problem occured while scrolling. Sleeping for 3s and retrying...\n');
                 returned      = 0;
                 scroll_tries += 1;
