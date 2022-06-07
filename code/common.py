@@ -2,17 +2,18 @@ from copy import deepcopy as copy
 from elasticsearch import Elasticsearch as ES
 import requests
 import time
+import sys
 
 _max_extract_time = 10; #minutes
 _max_scroll_tries = 2;
 _scroll_size      = 100;
 
-_refobjs = [    #'anystyle_references_from_cermine_fulltext',
-                #'anystyle_references_from_cermine_refstrings',
-                #'anystyle_references_from_grobid_fulltext',
+_refobjs = [    'anystyle_references_from_cermine_fulltext',
+                'anystyle_references_from_cermine_refstrings',
+                'anystyle_references_from_grobid_fulltext',
                 'anystyle_references_from_grobid_refstrings',   #                'anystyle_references_from_gold_fulltext',
-                #'cermine_references_from_cermine_xml',          #                'anystyle_references_from_gold_refstrings',
-                #'cermine_references_from_grobid_refstrings',    #                'cermine_references_from_gold_refstrings',
+                'cermine_references_from_cermine_refstrings',          #                'anystyle_references_from_gold_refstrings',
+                'cermine_references_from_grobid_refstrings',    #                'cermine_references_from_gold_refstrings',
                 'grobid_references_from_grobid_xml' ];
 
 _ids = None;#["EiGe_1976_0001"];
@@ -106,3 +107,4 @@ def search(field,id_field,index,recheck,get_url):
                 scroll_tries += 1;
                 time.sleep(3); continue;
             break;
+    client.clear_scroll(scroll_id=sid);

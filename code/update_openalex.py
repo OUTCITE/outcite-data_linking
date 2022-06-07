@@ -11,7 +11,7 @@ import requests
 #-GLOBAL OBJECTS----------------------------------------------------------------------------------------------------------------------------------
 _index            = sys.argv[1]; #'geocite' #'ssoar'
 _chunk_size       =  50;
-_max_extract_time = 0.1; #minutes
+
 _max_scroll_tries =   2;
 _scroll_size      =  25;
 _requestimeout    =  60;
