@@ -15,9 +15,9 @@ _max_scroll_tries =   2;
 _scroll_size      = 100;
 _requestimeout    =  60;
 
-_recheck = True;
-_retest  = False;
-_resolve = False;
+_recheck = False;
+_retest  = False; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
+_resolve = False; # Replaces the URL with the redirected URL if there should be redirection
 
 #====================================================================================
 _index_m    = 'sowiport'; # Not actually required for crossref as the id is already the doi
@@ -39,7 +39,7 @@ def get_url(refobjects,field,id_field):
             #print(id_field,'not in reference.');
             continue;
         #TODO: This should simply give you a URL and some result snippet or so
-        ID = check(url,_resolve);
+        ID = check(url,_resolve,5);
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);
