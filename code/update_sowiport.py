@@ -15,7 +15,7 @@ _max_scroll_tries =   2;
 _scroll_size      = 100;
 _requestimeout    =  60;
 
-_recheck = True;
+_recheck = False;
 _retest  = False;
 _resolve = False;
 
