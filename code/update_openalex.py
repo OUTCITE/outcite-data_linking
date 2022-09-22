@@ -17,8 +17,13 @@ _scroll_size      =  25;
 _requestimeout    =  60;
 
 _recheck = False;
+<<<<<<< HEAD
 _retest  = False;
 _resolve = True;
+=======
+_retest  = False; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
+_resolve = True;  # Replaces the URL with the redirected URL if there should be redirection
+>>>>>>> master
 
 #====================================================================================
 _index_m    = 'openalex'; # Not actually required for crossref as the id is already the doi
@@ -44,7 +49,7 @@ def get_url(refobjects,field,id_field):
         else:
             #print(id_field,'not in reference.');
             continue;
-        ID = check(url,_resolve);
+        ID = check(url,_resolve,5);
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);

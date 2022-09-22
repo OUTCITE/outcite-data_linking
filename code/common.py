@@ -18,12 +18,12 @@ _refobjs = [    'anystyle_references_from_cermine_fulltext',
 
 _ids = None;#["EiGe_1976_0001"];
 
-def check(url,RESOLVE=False):
+def check(url,RESOLVE=False,timeout=20):
     print('Checking URL',url,'...');
     page   = None;
     status = None;
     try:
-        page   = requests.get(url,timeout=20);
+        page   = requests.get(url,timeout=timeout);
         status = page.status_code;
         if status == 404:
             print('----> Could not resolve URL due to 404',url);
@@ -69,12 +69,12 @@ def doi2url_(doi):
 
 def search(field,id_field,index,recheck,get_url):
     #----------------------------------------------------------------------------------------------------------------------------------
-    body     = { '_op_type': 'update', '_index': index, '_id': None, '_source': { 'doc': { 'has_'+field: True, field: None } } };
-    scr_body = { "query": { "ids": { "values": _ids } } } if _ids else {'query':{'bool':{'must_not':{'term':{'has_'+field: True}}}}} if not recheck else {'query':{'bool':{'must':{'term':{'has_'+id_field+'s': True}}}}};
+    body      = { '_op_type': 'update', '_index': index, '_id': None, '_source': { 'doc': { 'has_'+field: True, field: None } } };
+    scr_query = { "ids": { "values": _ids } } if _ids else {'bool':{'must_not':{'term':{'has_'+field: True}}}} if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
     #print(scr_body);
     #----------------------------------------------------------------------------------------------------------------------------------
     client   = ES(['localhost'],scheme='http',port=9200,timeout=60);
-    page     = client.search(index=index,scroll=str(int(_max_extract_time*_scroll_size))+'m',size=_scroll_size,body=scr_body);
+    page     = client.search(index=index,scroll=str(int(_max_extract_time*_scroll_size))+'m',size=_scroll_size,query=scr_query);
     sid      = page['_scroll_id'];
     returned = len(page['hits']['hits']);
     page_num = 0;
