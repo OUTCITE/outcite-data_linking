@@ -92,8 +92,10 @@ def search(field,id_field,index,recheck,get_url):
                 body['_source']['doc'][refobj] = new_refobjects; # The updated ones
                 #print('-->',refobj,'gave',['','no '][len(new_ids)==0]+'ids',', '.join(new_ids),'\n');
             #print('------------------------------------------------\n-- overall ids --------------------------------\n'+', '.join(ids)+'\n------------------------------------------------');
-            body['_source']['doc'][field]        = list(ids) if len(ids) > 0 else None;
-            body['_source']['doc']['has_'+field] = True      if len(ids) > 0 else False;
+            body['_source']['doc'][field]              = list(ids);
+            body['_source']['doc']['processed_'+field] = True;
+            body['_source']['doc']['has_'+field]       = len(ids) > 0;
+            body['_source']['doc']['num_'+field]       = len(ids);
             yield body;
         scroll_tries = 0;
         while scroll_tries < _max_scroll_tries:

@@ -20,17 +20,22 @@ _refobjs = [    'anystyle_references_from_cermine_fulltext',
                 'anystyle_references_from_grobid_refstrings',   #                'anystyle_references_from_gold_fulltext',
                 'cermine_references_from_cermine_refstrings',          #                'anystyle_references_from_gold_refstrings',
                 'cermine_references_from_grobid_refstrings',    #                'cermine_references_from_gold_refstrings',
-                'grobid_references_from_grobid_xml' ];
+                'grobid_references_from_grobid_xml',
+                'exparser_references_from_cermine_layout' ];
+
+_refobjs = [ 'grobid_references_from_grobid_xml' ];
 
 _ids = None;#["EiGe_1976_0001"];
 
-_load_links      = True;  # Matching information and URL information
+_load_links      = False;  # Matching information and URL information
 _load_non_links  = False;  # Refstring and title of links without any matches
 _load_references = False; # Metadata of the extracted references
 _load_metadata   = True; # Metadata of the matched target objects
-_load_refobjects = True;  # Duplicate detection metadata of the extracted references
+_load_refobjects = False;  # Duplicate detection metadata of the extracted references
 
 _id_field = 'id' if _index=='users' else '@id';
+
+_id_fields = {'sowiport':'_id', 'crossref':'DOI.keyword', 'dnb': '_id', 'openalex': '_id'};
 
 def get_links(index,refobj):
     #----------------------------------------------------------------------------------------------------------------------------------
@@ -167,7 +172,7 @@ def get_metadata(index,refobj):
 
 def get_target(index,ID):
     #----------------------------------------------------------------------------------------------------------------------------------
-    search_query = { 'ids': { 'values':[ID] } };
+    search_query = { 'ids': { 'values':[ID] } } if _id_fields[index]=='_id' else { 'term': { _id_fields[index]: ID } };
     #----------------------------------------------------------------------------------------------------------------------------------
     client   = ES(['localhost'],scheme='http',port=9200,timeout=60);
     page     = client.search(index=index,query=search_query);
@@ -193,7 +198,7 @@ def get_target(index,ID):
         author1   = reference['author'][0]['given']+reference['author'][0]['family'] if 'author'          in reference and isinstance(reference['author'],list) and 'given' in reference['author'][0] and 'family' in reference['author'][0] else None;
         publor1   = reference['publisher']                                           if 'publisher'       in reference                                                                                                                       else None;
     elif index == 'dnb':
-        year      = reference['pub_dates'][0]  if 'pub_dates'  in reference and isinstance(reference['pub_dates'],list)   else None;
+        year      = reference['pub_dates'][0]  if 'pub_dates'  in reference and isinstance(reference['pub_dates'],list)  else None;
         title     = reference['title']         if 'title'      in reference                                              else None;
         author1   = reference['authors'][0]    if 'authors'    in reference and isinstance(reference['authors'],list)    else None;
         publor1   = reference['publishers'][0] if 'publishers' in reference and isinstance(reference['publishers'],list) else None;
@@ -252,7 +257,9 @@ def get_targets(index,refobj):
                     for toID, toCollection in [(toID_sowiport,'sowiport',),(toID_crossref,'crossref',),(toID_dnb,'dnb',),(toID_openalex,'openalex',)]:
                         if not toID:
                             continue;
+                        #print(toCollection,toID);
                         result = get_target(toCollection,toID);
+                        #print('-------->',result)
                         if result != None:
                             issue,volume,year,source,title,typ,author1,publor1,editor1 = result;
                             yield (toID,toCollection,issue,volume,year,source,title,typ,author1,publor1,editor1,);
