@@ -9,15 +9,21 @@ from common import *
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-GLOBAL OBJECTS----------------------------------------------------------------------------------------------------------------------------------
 _index            = sys.argv[1]; #'geocite' #'ssoar'
-_chunk_size       = 200;
 
-_max_scroll_tries =   2;
-_scroll_size      = 100;
-_requestimeout    =  60;
+IN = None;
+try:
+    IN = open(str((Path(__file__).parent / '../code/').resolve())+'/configs_custom.json');
+except:
+    IN = open(str((Path(__file__).parent / '../code/').resolve())+'/configs.json');
+_configs = json.load(IN);
+IN.close();
 
-_recheck = False;
-_retest  = False; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
-_resolve = False; # Replaces the URL with the redirected URL if there should be redirection
+_chunk_size    = _configs['chunk_size_sowiport'];
+_requestimeout = _configs['requestimeout_sowiport'];
+
+_recheck = _configs['recheck_sowiport'];
+_retest  = _configs['retest_sowiport']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
+_resolve = _configs['resolve_sowiport']; # Replaces the URL with the redirected URL if there should be redirection
 
 #====================================================================================
 _index_m    = 'sowiport'; # Not actually required for crossref as the id is already the doi

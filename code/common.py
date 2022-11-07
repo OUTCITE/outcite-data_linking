@@ -4,20 +4,21 @@ import requests
 import time
 import sys
 
-_max_extract_time = 10; #minutes
-_max_scroll_tries = 2;
-_scroll_size      = 100;
+IN = None;
+try:
+    IN = open(str((Path(__file__).parent / '../code/').resolve())+'/configs_custom.json');
+except:
+    IN = open(str((Path(__file__).parent / '../code/').resolve())+'/configs.json');
+_configs = json.load(IN);
+IN.close();
 
-_refobjs = [    'anystyle_references_from_cermine_fulltext',
-                'anystyle_references_from_cermine_refstrings',
-                'anystyle_references_from_grobid_fulltext',
-                'anystyle_references_from_grobid_refstrings',   #                'anystyle_references_from_gold_fulltext',
-                'cermine_references_from_cermine_refstrings',          #                'anystyle_references_from_gold_refstrings',
-                'cermine_references_from_grobid_refstrings',    #                'cermine_references_from_gold_refstrings',
-                'grobid_references_from_grobid_xml',
-                'exparser_references_from_cermine_layout' ];
+_max_extract_time = _configs['max_extract_time']; #minutes
+_max_scroll_tries = _configs['max_scroll_tries'];
+_scroll_size      = _configs['scroll_size'];
 
-_ids = None;#["EiGe_1976_0001"];
+_refobjs = _configs['refobjs'];
+
+_ids = _configs['ids'];
 
 def check(url,RESOLVE=False,timeout=20):
     print('Checking URL',url,'...');

@@ -1,0 +1,41 @@
+{
+    "max_scroll_tries":  2,
+    "scroll_size":     100,
+    "max_extract_time": 10,
+
+    "refobjs": [ "anystyle_references_from_cermine_fulltext",
+                 "anystyle_references_from_cermine_refstrings",
+                 "anystyle_references_from_grobid_fulltext",
+                 "anystyle_references_from_grobid_refstrings",
+                 "cermine_references_from_cermine_refstrings",
+                 "cermine_references_from_grobid_refstrings",
+                 "grobid_references_from_grobid_xml",
+                 "exparser_references_from_cermine_layout" ],
+
+    "ids": null,
+
+    "chunk_size_sowiport": 50,
+    "chunk_size_crossref": 50,
+    "chunk_size_dnb":      50,
+    "chunk_size_openalex": 50,
+
+    "requestimeout_sowiport":  60,
+    "requestimeout_crossref":  60,
+    "requestimeout_dnb":       60,
+    "requestimeout_openalex":  60,
+
+    "recheck_sowiport": false,
+    "recheck_crossref": false,
+    "recheck_dnb":      false,
+    "recheck_openalex": false,
+
+    "retest_sowiport": false,
+    "retest_crossref": false,
+    "retest_dnb":      false,
+    "retest_openalex": false,
+
+    "resolve_sowiport": false,
+    "resolve_crossref": false,
+    "resolve_dnb":      false,
+    "resolve_openalex": false,
+}
