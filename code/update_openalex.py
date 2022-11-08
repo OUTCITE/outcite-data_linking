@@ -6,6 +6,7 @@ from copy import deepcopy as copy
 from elasticsearch import Elasticsearch as ES
 from elasticsearch.helpers import streaming_bulk as bulk
 from common import *
+from pathlib import Path
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-GLOBAL OBJECTS----------------------------------------------------------------------------------------------------------------------------------
 _index            = sys.argv[1]; #'geocite' #'ssoar'

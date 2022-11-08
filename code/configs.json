@@ -37,5 +37,5 @@
     "resolve_sowiport": false,
     "resolve_crossref": false,
     "resolve_dnb":      false,
-    "resolve_openalex": false,
+    "resolve_openalex": false
 }
