@@ -73,8 +73,8 @@ def doi2url_(doi):
 
 def search(field,id_field,index,recheck,get_url):
     #----------------------------------------------------------------------------------------------------------------------------------
-    body      = { '_op_type': 'update', '_index': index, '_id': None, '_source': { 'doc': { 'has_'+field: True, field: None } } };
-    scr_query = { "ids": { "values": _ids } } if _ids else {'bool':{'must_not':{'term':{'has_'+field: True}}}} if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
+    body      = { '_op_type': 'update', '_index': index, '_id': None, '_source': { 'doc': { 'processed_'+field: True, field: None } } };
+    scr_query = { "ids": { "values": _ids } } if _ids else {'bool':{'must_not':{'term':{'processed_'+field: True}}}} if not recheck else {'bool':{'must':{'term':{'processed_'+id_field+'s': True}}}};
     #print(scr_body);
     #----------------------------------------------------------------------------------------------------------------------------------
     client   = ES(['localhost'],scheme='http',port=9200,timeout=60);
