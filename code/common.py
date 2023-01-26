@@ -27,7 +27,7 @@ def check(url,RESOLVE=False,timeout=20):
     page   = None;
     status = None;
     try:
-        page   = requests.get(url,timeout=timeout);
+        page   = requests.head(url,timeout=timeout);
         status = page.status_code;
         if status == 404:
             print('----> Could not resolve URL due to 404',url);
@@ -56,7 +56,7 @@ def doi2url_(doi):
     while True:
         try:
             print('Checking DOI',doi,'...');
-            url = requests.get(doi,timeout=20).url;
+            url = requests.head(doi,timeout=20).url;
             print('Done checking.');
             print(doi,url);
             break;

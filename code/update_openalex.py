@@ -19,8 +19,8 @@ except:
 _configs = json.load(IN);
 IN.close();
 
-_chunk_size    = _configs['chunk_size_openalex'];
-_requestimeout = _configs['requestimeout_openalex'];
+_chunk_size      = _configs['chunk_size_openalex'];
+_request_timeout = _configs['requestimeout_openalex'];
 
 _recheck = _configs['recheck_openalex'];
 _retest  = _configs['retest_openalex']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
@@ -64,7 +64,7 @@ _client   = ES(['localhost'],scheme='http',port=9200,timeout=60);
 _client_m = ES(['localhost'],scheme='http',port=9200,timeout=60);
 
 i = 0;
-for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,),chunk_size=_chunk_size, request_timeout=_requestimeout):
+for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,),chunk_size=_chunk_size, request_timeout=_request_timeout):
     i += 1;
     if not success:
         print('\n[!]-----> A document failed:', info['index']['_id'], info['index']['error'],'\n');
