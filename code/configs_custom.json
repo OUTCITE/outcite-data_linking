@@ -10,7 +10,8 @@
                  "cermine_references_from_cermine_xml",
                  "cermine_references_from_grobid_refstrings",
                  "grobid_references_from_grobid_xml",
-                 "exparser_references_from_cermine_layout" ],
+                 "exparser_references_from_cermine_layout",
+                 "anystyle_references_from_pdftotext_fulltext" ],
 
     "ids": null,
 
@@ -32,14 +33,14 @@
     "requestimeout_research_data": 60,
     "requestimeout_ssoar":         60,
 
-    "recheck_sowiport":      false,
-    "recheck_crossref":      false,
-    "recheck_dnb":           false,
-    "recheck_openalex":      false,
-    "recheck_arxiv":         false,
-    "recheck_gesis_bib":     false,
-    "recheck_research_data": false,
-    "recheck_ssoar":         false,
+    "recheck_sowiport":      true,
+    "recheck_crossref":      true,
+    "recheck_dnb":           true,
+    "recheck_openalex":      true,
+    "recheck_arxiv":         true,
+    "recheck_gesis_bib":     true,
+    "recheck_research_data": true,
+    "recheck_ssoar":         true,
 
     "retest_sowiport":      false,
     "retest_crossref":      false,

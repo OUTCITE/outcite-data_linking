@@ -19,17 +19,17 @@ except:
 _configs = json.load(IN);
 IN.close();
 
-_chunk_size      = _configs['chunk_size_openalex'];
-_request_timeout = _configs['requestimeout_openalex'];
+_chunk_size      = _configs['chunk_size_gesis_bib'];
+_request_timeout = _configs['requestimeout_gesis_bib'];
 
-_recheck = _configs['recheck_openalex'];
-_retest  = _configs['retest_openalex']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
-_resolve = _configs['resolve_openalex']; # Replaces the URL with the redirected URL if there should be redirection
+_recheck = _configs['recheck_gesis_bib'];
+_retest  = _configs['retest_gesis_bib']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
+_resolve = _configs['resolve_gesis_bib']; # Replaces the URL with the redirected URL if there should be redirection
 
 #====================================================================================
-_index_m    = 'openalex'; # Not actually required for crossref as the id is already the doi
-_from_field = 'openalex_id';
-_to_field   = 'openalex_urls';
+_index_m    = 'gesis_bib'; # Not actually required for crossref as the id is already the doi
+_from_field = 'gesis_bib_id';
+_to_field   = 'gesis_bib_urls';
 #====================================================================================
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
@@ -37,31 +37,26 @@ _to_field   = 'openalex_urls';
 def get_url(refobjects,field,id_field):
     ids = [];
     for i in range(len(refobjects)):
-        #print(refobjects[i]);
+        print(refobjects[i]);
         url = None;
         ID  = None;
         if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
-            opa_id = refobjects[i][id_field];
-            page   = _client_m.search(index=_index_m, body={"query":{"term":{"id.keyword":opa_id}}} );
-            doi    = doi2url(page['hits']['hits'][0]['_source']['doi']) if len(page['hits']['hits'])>0 and 'doi' in page['hits']['hits'][0]['_source'] and page['hits']['hits'][0]['_source']['doi'] else None;
-            link   = page['hits']['hits'][0]['_source']['url'] if len(page['hits']['hits'])>0 and 'url' in page['hits']['hits'][0]['_source'] else None;
-            url    = doi if doi else link if link else opa_id if opa_id else None;
-            print(url);
+            url = "https://search.gesis.org/gesis_bib/"+refobjects[i][id_field];
         else:
             #print(id_field,'not in reference.');
             continue;
+        #TODO: This should simply give you a URL and some result snippet or so
         ID = check(url,_resolve,5);
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);
-            #print(refobjects[i]);
+            print(refobjects[i]);
     return set(ids), refobjects;
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-SCRIPT------------------------------------------------------------------------------------------------------------------------------------------
 
-_client   = ES(['localhost'],scheme='http',port=9200,timeout=60);
-_client_m = ES(['localhost'],scheme='http',port=9200,timeout=60);
+_client = ES(['localhost'],scheme='http',port=9200,timeout=60);
 
 i = 0;
 for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,),chunk_size=_chunk_size, request_timeout=_request_timeout):

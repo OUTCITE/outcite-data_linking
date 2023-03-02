@@ -19,22 +19,24 @@ except:
 _configs = json.load(IN);
 IN.close();
 
-_chunk_size      = _configs['chunk_size_openalex'];
-_request_timeout = _configs['requestimeout_openalex'];
+_chunk_size      = _configs['chunk_size_arxiv'];
+_request_timeout = _configs['requestimeout_arxiv'];
 
-_recheck = _configs['recheck_openalex'];
-_retest  = _configs['retest_openalex']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
-_resolve = _configs['resolve_openalex']; # Replaces the URL with the redirected URL if there should be redirection
+_recheck = _configs['recheck_arxiv'];
+_retest  = _configs['retest_arxiv']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
+_resolve = _configs['resolve_arxiv']; # Replaces the URL with the redirected URL if there should be redirection
+
+_refobjs = _configs['refobjs'];
 
 #====================================================================================
-_index_m    = 'openalex'; # Not actually required for crossref as the id is already the doi
-_from_field = 'openalex_id';
-_to_field   = 'openalex_urls';
+_index_m    = 'arxiv'; # Not actually required for crossref as the id is already the doi
+_from_field = 'arxiv_id';
+_to_field   = 'arxiv_urls';
 #====================================================================================
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field):
+def get_url(refobjects,field,id_field): # This actually gets the doi not the url
     ids = [];
     for i in range(len(refobjects)):
         #print(refobjects[i]);
@@ -43,18 +45,15 @@ def get_url(refobjects,field,id_field):
         if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
             opa_id = refobjects[i][id_field];
             page   = _client_m.search(index=_index_m, body={"query":{"term":{"id.keyword":opa_id}}} );
-            doi    = doi2url(page['hits']['hits'][0]['_source']['doi']) if len(page['hits']['hits'])>0 and 'doi' in page['hits']['hits'][0]['_source'] and page['hits']['hits'][0]['_source']['doi'] else None;
-            link   = page['hits']['hits'][0]['_source']['url'] if len(page['hits']['hits'])>0 and 'url' in page['hits']['hits'][0]['_source'] else None;
-            url    = doi if doi else link if link else opa_id if opa_id else None;
-            print(url);
+            doi    = page['hits']['hits'][0]['_source']['doi'] if len(page['hits']['hits'])>0 and 'doi' in page['hits']['hits'][0]['_source'] else None;
+            url    = doi2url(doi) if doi else 'https://arxiv.org/abs/'+opa_id;
         else:
-            #print(id_field,'not in reference.');
             continue;
-        ID = check(url,_resolve,5);
+        ID = check(url,_resolve,5) if url else None;
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);
-            #print(refobjects[i]);
+        print(ids);
     return set(ids), refobjects;
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------

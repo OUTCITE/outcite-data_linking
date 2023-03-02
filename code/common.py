@@ -27,7 +27,7 @@ def check(url,RESOLVE=False,timeout=20):
     page   = None;
     status = None;
     try:
-        page   = requests.head(url,timeout=timeout);
+        page   = requests.head(url,allow_redirects=True,timeout=timeout) if RESOLVE else requests.head(url,timeout=timeout);
         status = page.status_code;
         if status == 404:
             print('----> Could not resolve URL due to 404',url);
@@ -74,8 +74,9 @@ def doi2url_(doi):
 def search(field,id_field,index,recheck,get_url):
     #----------------------------------------------------------------------------------------------------------------------------------
     body      = { '_op_type': 'update', '_index': index, '_id': None, '_source': { 'doc': { 'processed_'+field: True, field: None } } };
-    scr_query = { "ids": { "values": _ids } } if _ids else {'bool':{'must_not':{'term':{'processed_'+field: True}}}} if not recheck else {'bool':{'must':{'term':{'processed_'+id_field+'s': True}}}};
-    #print(scr_body);
+    scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not':  {'term':{'has_'+field: True}}, 'must': {'term':{'has_'+id_field+'s':True}} } } if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
+    #scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not':  {'term':{'has_'+field: True}}                                                                    } } if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
+    #scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not': [{'term':{'has_'+field: True}}], 'should': [{'term':{'has_'+refobj:True}} for refobj in _refobjs] } } if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
     #----------------------------------------------------------------------------------------------------------------------------------
     client   = ES(['localhost'],scheme='http',port=9200,timeout=60);
     page     = client.search(index=index,scroll=str(int(_max_extract_time*_scroll_size))+'m',size=_scroll_size,query=scr_query);
@@ -89,16 +90,17 @@ def search(field,id_field,index,recheck,get_url):
             body['_id'] = doc['_id'];
             ids         = set(doc['_source'][field]) if field in doc['_source'] and doc['_source'][field] != None else set([]);
             for refobj in _refobjs:
-                previous_refobjects            = doc['_source'][refobj] if refobj in doc['_source'] and doc['_source'][refobj] else None;
-                new_ids, new_refobjects        = get_url(previous_refobjects,field,id_field) if isinstance(previous_refobjects,list) else (set([]),previous_refobjects);
-                ids                           |= new_ids;
-                body['_source']['doc'][refobj] = new_refobjects; # The updated ones
+                previous_refobjects                      = doc['_source'][refobj] if refobj in doc['_source'] and doc['_source'][refobj] else None;
+                new_ids, new_refobjects                  = get_url(previous_refobjects,field,id_field) if isinstance(previous_refobjects,list) else (set([]),previous_refobjects);
+                ids                                     |= new_ids;
+                body['_source']['doc'][refobj]           = new_refobjects; # The updated ones
+                body['_source']['doc'][field+'_'+refobj] = list(new_ids);
                 #print('-->',refobj,'gave',['','no '][len(new_ids)==0]+'ids',', '.join(new_ids),'\n');
             #print('------------------------------------------------\n-- overall ids --------------------------------\n'+', '.join(ids)+'\n------------------------------------------------');
             body['_source']['doc'][field]              = list(ids);
             body['_source']['doc']['processed_'+field] = True;
             body['_source']['doc']['has_'+field]       = len(ids) > 0;
-            body['_source']['doc']['num_'+field]       = len(ids);
+            body['_source']['doc']['num_'+field]       = len(ids); print('-->',body['_source']['doc']['num_'+field])
             yield body;
         scroll_tries = 0;
         while scroll_tries < _max_scroll_tries:
