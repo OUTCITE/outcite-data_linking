@@ -9,7 +9,8 @@ from common import *
 from pathlib import Path
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-GLOBAL OBJECTS----------------------------------------------------------------------------------------------------------------------------------
-_index            = sys.argv[1]; #'geocite' #'ssoar'
+_index  = sys.argv[1]; #'geocite' #'ssoar'
+_target = sys.argv[2];
 
 IN = None;
 try:
@@ -19,22 +20,24 @@ except:
 _configs = json.load(IN);
 IN.close();
 
-_chunk_size      = _configs['chunk_size_arxiv'];
-_request_timeout = _configs['requestimeout_arxiv'];
+_buffer = _configs['buffer_'+_target];
 
-_recheck = _configs['recheck_arxiv'];
+_chunk_size      = _configs['chunk_size_'+_target];
+_request_timeout = _configs['requestimeout_'+_target];
+
+_recheck = _configs['recheck_'+_target];
 
 _refobjs = _configs['refobjs'];
 
 #====================================================================================
-_index_m    = 'arxiv'; # Not actually required for crossref as the id is already the doi
-_from_field = 'arxiv_id';
-_to_field   = 'arxiv_dois';
+_index_m    = _target; # Not actually required for crossref as the id is already the doi
+_from_field = _target+'_id';
+_to_field   = _target+'_dois';
 #====================================================================================
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field): # This actually gets the doi not the url
+def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi not the url
     ids = [];
     for i in range(len(refobjects)):
         #print(refobjects[i]);
@@ -44,7 +47,7 @@ def get_url(refobjects,field,id_field): # This actually gets the doi not the url
             opa_id = refobjects[i][id_field];
             page   = _client_m.search(index=_index_m, body={"query":{"term":{"id.keyword":opa_id}}} );
             doi    = page['hits']['hits'][0]['_source']['doi'] if len(page['hits']['hits'])>0 and 'doi' in page['hits']['hits'][0]['_source'] else None;
-            ID     = doi;
+            ID     = doi[0] if isinstance(doi,list) else doi;
             print(opa_id,doi)
         else:
             continue;
@@ -57,11 +60,11 @@ def get_url(refobjects,field,id_field): # This actually gets the doi not the url
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-SCRIPT------------------------------------------------------------------------------------------------------------------------------------------
 
-_client   = ES(['localhost'],scheme='http',port=9200,timeout=60);
-_client_m = ES(['localhost'],scheme='http',port=9200,timeout=60);
+_client   = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
+_client_m = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
 
 i = 0;
-for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,),chunk_size=_chunk_size, request_timeout=_request_timeout):
+for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,_buffer),chunk_size=_chunk_size, request_timeout=_request_timeout):
     i += 1;
     if not success:
         print('\n[!]-----> A document failed:', info['index']['_id'], info['index']['error'],'\n');

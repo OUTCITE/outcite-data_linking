@@ -19,6 +19,8 @@ except:
 _configs = json.load(IN);
 IN.close();
 
+_buffer = _configs['buffer_research_data'];
+
 _chunk_size      = _configs['chunk_size_research_data'];
 _request_timeout = _configs['requestimeout_research_data'];
 
@@ -34,7 +36,7 @@ _to_field   = 'research_data_urls';
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field):
+def get_url(refobjects,field,id_field,cur=None):
     ids = [];
     for i in range(len(refobjects)):
         print(refobjects[i]);
@@ -46,7 +48,7 @@ def get_url(refobjects,field,id_field):
             #print(id_field,'not in reference.');
             continue;
         #TODO: This should simply give you a URL and some result snippet or so
-        ID = check(url,_resolve,5);
+        ID = check(url,_resolve,cur,5);
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);
@@ -56,10 +58,10 @@ def get_url(refobjects,field,id_field):
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-SCRIPT------------------------------------------------------------------------------------------------------------------------------------------
 
-_client = ES(['localhost'],scheme='http',port=9200,timeout=60);
+_client = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
 
 i = 0;
-for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,),chunk_size=_chunk_size, request_timeout=_request_timeout):
+for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,_buffer),chunk_size=_chunk_size, request_timeout=_request_timeout):
     i += 1;
     if not success:
         print('\n[!]-----> A document failed:', info['index']['_id'], info['index']['error'],'\n');

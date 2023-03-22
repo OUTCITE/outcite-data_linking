@@ -19,46 +19,44 @@ except:
 _configs = json.load(IN);
 IN.close();
 
-_buffer = _configs['buffer_ssoar'];
+_buffer = _configs['buffer_crossref'];
 
-_chunk_size      = _configs['chunk_size_ssoar'];
-_request_timeout = _configs['requestimeout_ssoar'];
+_chunk_size      = _configs['chunk_size_crossref'];
+_request_timeout = _configs['requestimeout_crossref'];
 
-_recheck = _configs['recheck_ssoar'];
-_retest  = _configs['retest_ssoar']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
-_resolve = _configs['resolve_ssoar']; # Replaces the URL with the redirected URL if there should be redirection
+_recheck = _configs['recheck_crossref'];
+
+_refobjs = _configs['refobjs'];
 
 #====================================================================================
-_index_m    = 'ssoar'; # Not actually required for crossref as the id is already the doi
-_from_field = 'ssoar_id';
-_to_field   = 'ssoar_urls';
+_index_m    = 'crossref'; # Not actually required for crossref as the id is already the doi
+_from_field = 'crossref_id';
+_to_field   = 'crossref_dois';
 #====================================================================================
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field,cur=None):
+def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi not the url
     ids = [];
     for i in range(len(refobjects)):
-        print(refobjects[i]);
+        #print(refobjects[i]);
         url = None;
         ID  = None;
-        if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
-            url = "https://search.gesis.org/publication/"+refobjects[i][id_field];
+        if id_field in refobjects[i]:# and ( _to_field[:-1] not in refobjects[i] or not refobjects[i][_to_field[:-1]] ):
+            ID = refobjects[i][id_field];
         else:
-            #print(id_field,'not in reference.');
             continue;
-        #TODO: This should simply give you a URL and some result snippet or so
-        ID = check(url,_resolve,cur,5);
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);
-            print(refobjects[i]);
+        print(ids);
     return set(ids), refobjects;
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-SCRIPT------------------------------------------------------------------------------------------------------------------------------------------
 
-_client = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
+_client   = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
+_client_m = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
 
 i = 0;
 for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,_buffer),chunk_size=_chunk_size, request_timeout=_request_timeout):

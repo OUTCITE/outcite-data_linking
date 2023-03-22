@@ -19,6 +19,8 @@ except:
 _configs = json.load(IN);
 IN.close();
 
+_buffer = _configs['buffer_openalex'];
+
 _chunk_size      = _configs['chunk_size_openalex'];
 _request_timeout = _configs['requestimeout_openalex'];
 
@@ -34,7 +36,7 @@ _to_field   = 'openalex_urls';
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field):
+def get_url(refobjects,field,id_field,cur=None):
     ids = [];
     for i in range(len(refobjects)):
         #print(refobjects[i]);
@@ -43,14 +45,14 @@ def get_url(refobjects,field,id_field):
         if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
             opa_id = refobjects[i][id_field];
             page   = _client_m.search(index=_index_m, body={"query":{"term":{"id.keyword":opa_id}}} );
-            doi    = doi2url(page['hits']['hits'][0]['_source']['doi']) if len(page['hits']['hits'])>0 and 'doi' in page['hits']['hits'][0]['_source'] and page['hits']['hits'][0]['_source']['doi'] else None;
+            doi    = doi2url(page['hits']['hits'][0]['_source']['doi'],cur) if len(page['hits']['hits'])>0 and 'doi' in page['hits']['hits'][0]['_source'] and page['hits']['hits'][0]['_source']['doi'] else None;
             link   = page['hits']['hits'][0]['_source']['url'] if len(page['hits']['hits'])>0 and 'url' in page['hits']['hits'][0]['_source'] else None;
             url    = doi if doi else link if link else opa_id if opa_id else None;
             print(url);
         else:
             #print(id_field,'not in reference.');
             continue;
-        ID = check(url,_resolve,5);
+        ID = check(url,_resolve,cur,5);
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);
@@ -60,11 +62,11 @@ def get_url(refobjects,field,id_field):
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-SCRIPT------------------------------------------------------------------------------------------------------------------------------------------
 
-_client   = ES(['localhost'],scheme='http',port=9200,timeout=60);
-_client_m = ES(['localhost'],scheme='http',port=9200,timeout=60);
+_client   = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
+_client_m = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
 
 i = 0;
-for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,),chunk_size=_chunk_size, request_timeout=_request_timeout):
+for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,_buffer),chunk_size=_chunk_size, request_timeout=_request_timeout):
     i += 1;
     if not success:
         print('\n[!]-----> A document failed:', info['index']['_id'], info['index']['error'],'\n');

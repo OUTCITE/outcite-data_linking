@@ -7,9 +7,12 @@ from elasticsearch import Elasticsearch as ES
 from elasticsearch.helpers import streaming_bulk as bulk
 from common import *
 from pathlib import Path
+import sqlite3
+import re
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-GLOBAL OBJECTS----------------------------------------------------------------------------------------------------------------------------------
-_index            = sys.argv[1]; #'geocite' #'ssoar'
+_index  = sys.argv[1]; #'geocite' #'ssoar'
+_target = sys.argv[2] if len(sys.argv)>2 else None;
 
 IN = None;
 try:
@@ -19,21 +22,23 @@ except:
 _configs = json.load(IN);
 IN.close();
 
-_buffer = _configs['buffer_arxiv'];
+_buffer = _configs['buffer_general'];
 
-_chunk_size      = _configs['chunk_size_arxiv'];
-_request_timeout = _configs['requestimeout_arxiv'];
+_chunk_size      = _configs['chunk_size_general'];
+_request_timeout = _configs['requestimeout_general'];
 
-_recheck = _configs['recheck_arxiv'];
-_retest  = _configs['retest_arxiv']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
-_resolve = _configs['resolve_arxiv']; # Replaces the URL with the redirected URL if there should be redirection
+_recheck = _configs['recheck_general'];
+_retest  = _configs['retest_general']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
+_resolve = _configs['resolve_general']; # Replaces the URL with the redirected URL if there should be redirection
 
 _refobjs = _configs['refobjs'];
 
+ARXIVURL = re.compile("((https?:\/\/www\.)|(https?:\/\/)|(www\.))arxiv\.org\/(abs|pdf)\/[0-9]+\.[0-9]+(\.pdf)?");
+ARXIVID = re.compile("[0-9]+\.[0-9]+");
+
 #====================================================================================
-_index_m    = 'arxiv'; # Not actually required for crossref as the id is already the doi
-_from_field = 'arxiv_id';
-_to_field   = 'arxiv_urls';
+_from_field = _target+'_id' if _target=='ssoar' or _target=='arxiv' else _target+'_doi' if _target else 'doi';
+_to_field   = 'general_urls';
 #====================================================================================
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
@@ -41,20 +46,30 @@ _to_field   = 'arxiv_urls';
 def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi not the url
     ids = [];
     for i in range(len(refobjects)):
-        url = None;
-        ID  = None;
-        if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
-            opa_id = refobjects[i][id_field];
-            page   = _client_m.search(index=_index_m, body={"query":{"term":{"id.keyword":opa_id}}} );
-            doi    = page['hits']['hits'][0]['_source']['doi'] if len(page['hits']['hits'])>0 and 'doi' in page['hits']['hits'][0]['_source'] else None;
-            url    = doi2url(doi,cur) if doi else 'https://arxiv.org/abs/'+opa_id;
-        else:
-            continue;
-        ID = url;#check(url,_resolve,cur,5) if url else None;
-        if ID != None:
-            refobjects[i][field[:-1]] = ID;
-            ids.append(ID);
-        print(ids);
+        print(id_field,'ssoar_id' in refobjects[i] and refobjects[i]['ssoar_id']);
+        if id_field=='ssoar_id' and 'ssoar_id' in refobjects[i] and refobjects[i]['ssoar_id'] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
+            handle                    = refobjects[i]['ssoar_id'].split('-')[-1];
+            url                       = 'https://www.ssoar.info/ssoar/handle/document/'+handle;
+            url                       = check(url,False,cur,5);
+            if url:
+                refobjects[i][field[:-1]] = url;
+                ids.append(url);
+            elif field[:-1] in refobjects[i]:
+                refobjects[i][field[:-1]] = None;
+                if url in ids: #TODO: Possibly too expensive
+                    ids.remove(url);
+        elif id_field=='arxiv_id' and 'arxiv_id' in refobjects[i] and refobjects[i]['arxiv_id'] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
+            url                       = 'https://arxiv.org/abs/'+refobjects[i]['arxiv_id'];
+            refobjects[i][field[:-1]] = url;
+            ids.append(url);
+        elif id_field in refobjects[i] and refobjects[i][id_field] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
+            doi = refobjects[i][id_field].lower().rstrip('.'); print('--->',doi);
+            if not ( doi.startswith('arxiv:') or (doi.startswith('abs/') and ARXIVID.search(doi)) ):
+                url = doi2url(doi,cur);
+                if url and not url.endswith('.pdf') and not ARXIVURL.match(url):
+                    refobjects[i][field[:-1]] = url;
+                    ids.append(url);
+    print(ids);
     return set(ids), refobjects;
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------

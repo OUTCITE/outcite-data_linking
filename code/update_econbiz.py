@@ -19,35 +19,40 @@ except:
 _configs = json.load(IN);
 IN.close();
 
-_chunk_size      = _configs['chunk_size_openalex'];
-_request_timeout = _configs['requestimeout_openalex'];
+_buffer = _configs['buffer_econbiz'];
 
-_recheck = _configs['recheck_openalex'];
+_chunk_size      = _configs['chunk_size_econbiz'];
+_request_timeout = _configs['requestimeout_econbiz'];
+
+_recheck = _configs['recheck_econbiz'];
+_retest  = _configs['retest_econbiz']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
+_resolve = _configs['resolve_econbiz']; # Replaces the URL with the redirected URL if there should be redirection
 
 _refobjs = _configs['refobjs'];
 
 #====================================================================================
-_index_m    = 'openalex'; # Not actually required for crossref as the id is already the doi
-_from_field = 'openalex_id';
-_to_field   = 'openalex_dois';
+_index_m    = 'econbiz'; # Not actually required for crossref as the id is already the doi
+_from_field = 'econbiz_id';
+_to_field   = 'econbiz_urls';
 #====================================================================================
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field): # This actually gets the doi not the url
+def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi not the url
     ids = [];
     for i in range(len(refobjects)):
-        #print(refobjects[i]);
         url = None;
         ID  = None;
-        if id_field in refobjects[i]:# and ( _to_field[:-1] not in refobjects[i] or not refobjects[i][_to_field[:-1]] ):
+        if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
             opa_id = refobjects[i][id_field];
             page   = _client_m.search(index=_index_m, body={"query":{"term":{"id.keyword":opa_id}}} );
-            doi    = page['hits']['hits'][0]['_source']['doi'] if len(page['hits']['hits'])>0 and 'doi' in page['hits']['hits'][0]['_source'] else None;
-            ID     = doi;
-            print(opa_id,doi)
+            doi    = page['hits']['hits'][0]['_source']['doi']  if len(page['hits']['hits'])>0 and 'doi'  in page['hits']['hits'][0]['_source'] else None;
+            urls   = page['hits']['hits'][0]['_source']['urls'] if len(page['hits']['hits'])>0 and 'urls' in page['hits']['hits'][0]['_source'] else [];
+            url    = doi2url(doi,cur) if doi else urls[0] if urls else 'https://www.econbiz.de/Record/'+opa_id;
+            url    = urls[0] if (not url) and urls else 'https://www.econbiz.de/Record/'+opa_id if not url else url;
         else:
             continue;
+        ID = check(url,_resolve,cur,5) if url else None;
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);
@@ -57,11 +62,11 @@ def get_url(refobjects,field,id_field): # This actually gets the doi not the url
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-SCRIPT------------------------------------------------------------------------------------------------------------------------------------------
 
-_client   = ES(['localhost'],scheme='http',port=9200,timeout=60);
-_client_m = ES(['localhost'],scheme='http',port=9200,timeout=60);
+_client   = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
+_client_m = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
 
 i = 0;
-for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,),chunk_size=_chunk_size, request_timeout=_request_timeout):
+for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,_buffer),chunk_size=_chunk_size, request_timeout=_request_timeout):
     i += 1;
     if not success:
         print('\n[!]-----> A document failed:', info['index']['_id'], info['index']['error'],'\n');

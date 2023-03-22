@@ -19,6 +19,8 @@ except:
 _configs = json.load(IN);
 IN.close();
 
+_buffer = _configs['buffer_crossref'];
+
 _chunk_size      = _configs['chunk_size_crossref'];
 _request_timeout = _configs['requestimeout_crossref'];
 
@@ -34,17 +36,17 @@ _to_field   = 'crossref_urls';
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field):
+def get_url(refobjects,field,id_field,cur=None):
     ids = [];
     for i in range(len(refobjects)):
         url = None;
         ID  = None;
         if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
-            url = doi2url(refobjects[i][id_field]);
+            url = doi2url(refobjects[i][id_field],);
         else:
             #print(id_field,'not in reference.');
             continue;
-        ID = check(url,_resolve,5) if url else None;
+        ID = check(url,_resolve,cur,5) if url else None;
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);
@@ -53,10 +55,10 @@ def get_url(refobjects,field,id_field):
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-SCRIPT------------------------------------------------------------------------------------------------------------------------------------------
 
-_client = ES(['localhost'],scheme='http',port=9200,timeout=60);
+_client = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
 
 i = 0;
-for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,),chunk_size=_chunk_size, request_timeout=_request_timeout):
+for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,_buffer),chunk_size=_chunk_size, request_timeout=_request_timeout):
     i += 1;
     if not success:
         print('\n[!]-----> A document failed:', info['index']['_id'], info['index']['error'],'\n');
