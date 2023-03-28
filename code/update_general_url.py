@@ -38,7 +38,7 @@ ARXIVID = re.compile("[0-9]+\.[0-9]+");
 
 #====================================================================================
 _from_field = _target+'_id' if _target=='ssoar' or _target=='arxiv' else _target+'_doi' if _target else 'doi';
-_to_field   = 'general_urls';
+_to_field   = 'general_urls'; # WARNING: The difference to the usual procedure is that this is used multiple times for different _target, which means processed_general_url=true
 #====================================================================================
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------

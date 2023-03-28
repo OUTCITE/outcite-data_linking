@@ -48,7 +48,7 @@ def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi no
             page   = _client_m.search(index=_index_m, body={"query":{"term":{"id.keyword":opa_id}}} );
             doi    = page['hits']['hits'][0]['_source']['doi'] if len(page['hits']['hits'])>0 and 'doi' in page['hits']['hits'][0]['_source'] else None;
             ID     = doi[0] if isinstance(doi,list) else doi;
-            ID     = ID.split('doi.org/')[-1]; #TODO: This may fail in rare cases where doi.org is in the doi itself
+            ID     = ID.split('doi.org/')[-1] if isinstance(ID,str) else None; #TODO: This may fail in rare cases where doi.org is in the doi itself
             print(opa_id,doi)
         else:
             continue;
