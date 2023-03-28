@@ -88,9 +88,9 @@ def doi2url_(doi):
 def search(field,id_field,index,recheck,get_url,BUFFER=False):
     #----------------------------------------------------------------------------------------------------------------------------------
     body      = { '_op_type': 'update', '_index': index, '_id': None, '_source': { 'doc': { 'processed_'+field: True, field: None } } };
-    scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not':  {'term':{'has_'+field: True}}, 'must': {'term':{'has_'+id_field+'s':True}} } } if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
+    scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not':  {'term':{'processed_'+field: True}}, 'must': {'term':{'has_'+id_field+'s':True}} } } if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
     if id_field=='doi':
-        scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not':  {'term':{'has_'+field: True}}}} if not recheck else {'match_all':{}};
+        scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not':  {'term':{'processed_'+field: True}}}} if not recheck else {'match_all':{}};
     #scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not':  {'term':{'has_'+field: True}}                                                                    } } if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
     #scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not': [{'term':{'has_'+field: True}}], 'should': [{'term':{'has_'+refobj:True}} for refobj in _refobjs] } } if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
     con = sqlite3.connect('urls_'+index+'.db') if BUFFER else None;
