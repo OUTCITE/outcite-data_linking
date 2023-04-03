@@ -79,9 +79,9 @@ def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi no
         #if isinstance(refobjects[i]['general_urls'],str): #TODO: Delete
         #    refobjects[i]['general_urls'] = [];
         if url_:
-            print('#####',url_,refobjects[i]['general_urls'])
             refobjects[i]['general_urls'] = list(set(refobjects[i]['general_urls']+[url_])) if 'general_urls' in refobjects[i] else [url_];
             refobjects[i]['general_url']  = get_best_general_url(refobjects[i]['general_urls']);
+            print('#####',url_,refobjects[i]['general_urls'])
     return set(ids), refobjects;
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------
