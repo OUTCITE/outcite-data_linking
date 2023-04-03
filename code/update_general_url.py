@@ -38,21 +38,26 @@ ARXIVID = re.compile("[0-9]+\.[0-9]+");
 
 #====================================================================================
 _from_field = _target+'_id' if _target=='ssoar' or _target=='arxiv' else _target+'_doi' if _target else 'doi';
-_to_field   = 'general_urls'; # WARNING: The difference to the usual procedure is that this is used multiple times for different _target, which means processed_general_url=true
+_to_field   = _target+'_general_urls' if _target else 'extracted_general_urls'; # WARNING: The difference to the usual procedure is that this is used multiple times for different _target, which means processed_general_url=true
 #====================================================================================
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
+def get_best_general_url(urls): #TODO: Can be specified
+    return urls[0] if len(urls)>0 else None;
+
 def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi not the url
     ids = [];
     for i in range(len(refobjects)):
-        print(id_field,'ssoar_id' in refobjects[i] and refobjects[i]['ssoar_id']);
+        #print(id_field,'ssoar_id' in refobjects[i] and refobjects[i]['ssoar_id']);
+        url_ = None;
         if id_field=='ssoar_id' and 'ssoar_id' in refobjects[i] and refobjects[i]['ssoar_id'] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
             handle                    = refobjects[i]['ssoar_id'].split('-')[-1];
             url                       = 'https://www.ssoar.info/ssoar/handle/document/'+handle;
             url                       = check(url,False,cur,5);
             if url:
                 refobjects[i][field[:-1]] = url;
+                url_                      = url;
                 ids.append(url);
             elif field[:-1] in refobjects[i]:
                 refobjects[i][field[:-1]] = None;
@@ -61,6 +66,7 @@ def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi no
         elif id_field=='arxiv_id' and 'arxiv_id' in refobjects[i] and refobjects[i]['arxiv_id'] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
             url                       = 'https://arxiv.org/abs/'+refobjects[i]['arxiv_id'];
             refobjects[i][field[:-1]] = url;
+            url_                      = url;
             ids.append(url);
         elif id_field in refobjects[i] and refobjects[i][id_field] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
             doi = refobjects[i][id_field].lower().rstrip('.'); print('--->',doi);
@@ -68,8 +74,14 @@ def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi no
                 url = doi2url(doi,cur);
                 if url and not url.endswith('.pdf') and not ARXIVURL.match(url):
                     refobjects[i][field[:-1]] = url;
+                    url_                      = url;
                     ids.append(url);
-    print(ids);
+        #if isinstance(refobjects[i]['general_urls'],str): #TODO: Delete
+        #    refobjects[i]['general_urls'] = [];
+        if url_:
+            print('#####',url_,refobjects[i]['general_urls'])
+            refobjects[i]['general_urls'] = list(set(refobjects[i]['general_urls']+[url_])) if 'general_urls' in refobjects[i] else [url_];
+            refobjects[i]['general_url']  = get_best_general_url(refobjects[i]['general_urls']);
     return set(ids), refobjects;
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------

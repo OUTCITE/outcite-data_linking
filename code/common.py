@@ -26,7 +26,7 @@ _refobjs = _configs['refobjs'];
 
 _ids = _configs['ids'];
 
-def check(url,RESOLVE=False,cur=None,timeout=20):
+def check(url,RESOLVE=False,cur=None,timeout=5):
     print('Checking URL',url,'...');
     page   = None;
     status = None;
@@ -85,12 +85,13 @@ def doi2url_(doi):
             print('Problem obtaining URL for doi '+doi+'. Retrying...');
     return url;
 
-def search(field,id_field,index,recheck,get_url,BUFFER=False):
+def search(field,id_field,index,recheck,get_url,BUFFER=False): #TODO: That line 91 scr_query did not solve the problem yet
     #----------------------------------------------------------------------------------------------------------------------------------
     body      = { '_op_type': 'update', '_index': index, '_id': None, '_source': { 'doc': { 'processed_'+field: True, field: None } } };
-    scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not':  {'term':{'processed_'+field: True}}, 'must': {'term':{'has_'+id_field+'s':True}} } } if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
+    scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not':  {'term':{'processed_'+field: True}}, 'should': [{'term':{'has_'+id_field+'s':True}},{'term':{'has_'+id_field.split('_')[0]+'_references_by_matching':True}}] } } if not recheck else {'bool':{'should':[{'term':{'has_'+id_field+'s':True}},{'term':{'has_'+id_field.split('_')[0]+'_references_by_matching':True}}]}};
     if id_field=='doi':
         scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not':  {'term':{'processed_'+field: True}}}} if not recheck else {'match_all':{}};
+    print(scr_query);
     #scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not':  {'term':{'has_'+field: True}}                                                                    } } if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
     #scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not': [{'term':{'has_'+field: True}}], 'should': [{'term':{'has_'+refobj:True}} for refobj in _refobjs] } } if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
     con = sqlite3.connect('urls_'+index+'.db') if BUFFER else None;

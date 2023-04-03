@@ -60,8 +60,8 @@
     "recheck_research_data": false,
     "recheck_ssoar":         false,
     "recheck_econbiz":       false,
-    "recheck_pdf":           true,
-    "recheck_general":       true,
+    "recheck_pdf":           false,
+    "recheck_general":       false,
 
     "retest_sowiport":      false,
     "retest_crossref":      false,
@@ -84,6 +84,6 @@
     "resolve_research_data": false,
     "resolve_ssoar":         false,
     "resolve_econbiz":       false,
-    "resolve_pdf":           true,
-    "resolve_general":       true
+    "resolve_pdf":           false,
+    "resolve_general":       false
 }

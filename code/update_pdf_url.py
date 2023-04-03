@@ -15,6 +15,8 @@ _index  = sys.argv[1]; #'geocite' #'ssoar'
 _dbfile = sys.argv[2];#'resources/doi2pdfs.db';
 _target = sys.argv[3] if len(sys.argv)>3 else None;
 
+_mapping = _dbfile.split('/')[-1].split('.')[0];
+
 IN = None;
 try:
     IN = open(str((Path(__file__).parent / '../code/').resolve())+'/configs_custom.json');
@@ -38,14 +40,18 @@ _con = sqlite3.connect(_dbfile);
 _cur = _con.cursor();
 
 ARXIVURL = re.compile("((https?:\/\/www\.)|(https?:\/\/)|(www\.))arxiv\.org\/(abs|pdf)\/[0-9]+\.[0-9]+(\.pdf)?");
-ARXIVID = re.compile("[0-9]+\.[0-9]+");
+ARXIVPDF = re.compile("((https?:\/\/www\.)|(https?:\/\/)|(www\.))arxiv\.org\/pdf\/[0-9]+\.[0-9]+(\.pdf)?");
+ARXIVID  = re.compile("[0-9]+\.[0-9]+");
 
 #====================================================================================
 _from_field = _target+'_id' if _target=='ssoar' or _target=='arxiv' else _target+'_doi' if _target else 'doi';
-_to_field   = 'fulltext_urls'; # WARNING: The difference to the usual procedure is that this is used multiple times for different _target, which means processed_fulltext_url=true
+_to_field   = _target+'_'+_mapping+'_fulltext_urls' if _target else 'extracted_'+_mapping+'_fulltext_urls'; # WARNING: The difference to the usual procedure is that this is used multiple times for different _target, which means processed_fulltext_url=true
 #====================================================================================
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
+
+def get_best_pdf_url(urls): #TODO: Can be specified
+    return urls[0] if len(urls)>0 else None;
 
 def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi not the url
     ids = [];
@@ -70,7 +76,7 @@ def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi no
             urls_ = [row[0] for row in _cur.execute("SELECT pdf_url FROM doi2pdfs WHERE doi=? ORDER BY id DESC",(doi,)).fetchall()]+alt;
             for url in urls_:
                 if url and not ARXIVURL.match(url):
-                    url = check(url,_resolve,cur,5) if url else None;
+                    url = url if isinstance(url,str) else None;#check(url,_resolve,cur,5) if url else None;
                 else:
                     print(url);
                 if url:
@@ -80,13 +86,17 @@ def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi no
                         urls_etc.append(url);
         else:
             continue;
-        urls = urls_pdf + urls_etc;
+        urls = list(set(urls_pdf + urls_etc));
         for url in urls:
             ID = url;#check(url,_resolve,5) if url else None;
             if ID != None:
-                refobjects[i][field[:-1]] = ID;
+                #refobjects[i][field[:-1]] = ID;
                 ids.append(ID);
-            break;
+            #break;
+        pdfurls                   = [url for url in urls if url.endswith('.pdf') or ARXIVPDF.match(url)];
+        refobjects[i][field]      = urls;
+        refobjects[i]['fulltext_urls'] = list(set(refobjects[i]['fulltext_urls']+pdfurls)) if 'fulltext_urls' in refobjects[i] else pdfurls;
+        refobjects[i]['fulltext_url']  = get_best_pdf_url(refobjects[i]['fulltext_urls']);
     return set(ids), refobjects;
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------
