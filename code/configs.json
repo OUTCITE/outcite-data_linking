@@ -11,7 +11,9 @@
                  "cermine_references_from_cermine_xml",
                  "cermine_references_from_grobid_refstrings",
                  "grobid_references_from_grobid_xml",
-                 "exparser_references_from_cermine_layout" ],
+                 "exparser_references_from_cermine_layout",
+                 "openalex_references_by_matching",
+                 "crossref_references_by_matching" ],
 
     "ids": null,
 
@@ -50,6 +52,18 @@
     "requestimeout_econbiz":       60,
     "requestimeout_pdf":           60,
     "requestimeout_general":       60,
+
+    "check_sowiport":      false,
+    "check_crossref":      false,
+    "check_dnb":           false,
+    "check_openalex":      false,
+    "check_arxiv":         false,
+    "check_gesis_bib":     false,
+    "check_research_data": false,
+    "check_ssoar":         false,
+    "check_econbiz":       false,
+    "check_pdf":           false,
+    "check_general":       false,
 
     "recheck_sowiport":      false,
     "recheck_crossref":      false,

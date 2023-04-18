@@ -26,13 +26,13 @@ _refobjs = _configs['refobjs'];
 
 _ids = _configs['ids'];
 
-def check(url,RESOLVE=False,cur=None,timeout=5):
+def check(url,RESOLVE=False,cur=None,timeout=5,USE_BUFFER=False):
     print('Checking URL',url,'...');
     page   = None;
     status = None;
     try:
         status = None;
-        if cur:
+        if cur and USE_BUFFER: # IF cur is None then neither read nor write, if USE_BUFFER is False, then only write
             rows    = cur.execute("SELECT status,resolve FROM urls WHERE url=?",(url,)).fetchall();
             status  = rows[0][0] if rows and rows[0] else None;
             new_url = rows[0][1] if rows and rows[0] else None;
@@ -41,9 +41,9 @@ def check(url,RESOLVE=False,cur=None,timeout=5):
             status  = page.status_code;
             new_url = page.url;
             if cur:
-                cur.execute("INSERT INTO urls VALUES(?,?,?)",(url,status,new_url,));
-        if status == 404:
-            print('----> Could not resolve URL due to 404',url);
+                cur.execute("INSERT OR REPLACE INTO urls VALUES(?,?,?)",(url,status,new_url,));
+        if status in [400,404]+list(range(407,415))+list(range(500,511)):
+            print('----> Could not resolve URL due to',status,url);
             return None;
     except Exception as e:
         print('ERROR:',e, file=sys.stderr);
@@ -59,33 +59,11 @@ def extract_arxiv_id(string):
     ids = [match.group() for match in ARXIVID.finditer(string)];
     return ids[0] if ids else None;
 
-def doi2url(doi,cur=None):
+def doi2url(doi,cur=None,USE_BUFFER=False):
     url   = 'https://doi.org/'+doi;
-    return check(url,True,cur);
+    return check(url,True,cur,5,USE_BUFFER);
 
-def doi2url_(doi):
-    doi   = 'https://doi.org/'+doi;
-    url   = None;
-    tries = 0;
-    while True:
-        try:
-            print('Checking DOI',doi,'...');
-            url = requests.head(doi,timeout=20).url;
-            print('Done checking.');
-            print(doi,url);
-            break;
-        except Exception as e:
-            print(e, file=sys.stderr);
-            if tries > _max_scroll_tries:
-                print(e);
-                print('Problem obtaining URL for doi '+doi+'. Giving up.');
-                break;
-            tries += 1;
-            print(e);
-            print('Problem obtaining URL for doi '+doi+'. Retrying...');
-    return url;
-
-def search(field,id_field,index,recheck,get_url,BUFFER=False): #TODO: That line 91 scr_query did not solve the problem yet
+def search(field,id_field,index,recheck,get_url,USE_BUFFER=False): #TODO: That line 91 scr_query did not solve the problem yet
     #----------------------------------------------------------------------------------------------------------------------------------
     body      = { '_op_type': 'update', '_index': index, '_id': None, '_source': { 'doc': { 'processed_'+field: True, field: None } } };
     scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not':  {'term':{'processed_'+field: True}}, 'should': [{'term':{'has_'+id_field+'s':True}},{'term':{'has_'+id_field.split('_')[0]+'_references_by_matching':True}}] } } if not recheck else {'bool':{'should':[{'term':{'has_'+id_field+'s':True}},{'term':{'has_'+id_field.split('_')[0]+'_references_by_matching':True}}]}};
@@ -94,10 +72,10 @@ def search(field,id_field,index,recheck,get_url,BUFFER=False): #TODO: That line 
     print(scr_query);
     #scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not':  {'term':{'has_'+field: True}}                                                                    } } if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
     #scr_query = { "ids": { "values": _ids } } if _ids else { 'bool':{'must_not': [{'term':{'has_'+field: True}}], 'should': [{'term':{'has_'+refobj:True}} for refobj in _refobjs] } } if not recheck else {'bool':{'must':{'term':{'has_'+id_field+'s': True}}}};
-    con = sqlite3.connect('urls_'+index+'.db') if BUFFER else None;
-    cur = con.cursor() if con else None;
-    if cur:
-        cur.execute("CREATE TABLE IF NOT EXISTS urls(url TEXT PRIMARY KEY, status INTEGER, resolve TEXT)");
+    con = sqlite3.connect('urls_'+index+'.db');# if USE_BUFFER else None;
+    cur = con.cursor();# if BUFFER else None;
+    #if BUFFER:
+    cur.execute("CREATE TABLE IF NOT EXISTS urls(url TEXT PRIMARY KEY, status INTEGER, resolve TEXT)");
     #----------------------------------------------------------------------------------------------------------------------------------
     client   = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);print(scr_query)
     page     = client.search(index=index,scroll=str(int(_max_extract_time*_scroll_size))+'m',size=_scroll_size,query=scr_query);
@@ -112,7 +90,7 @@ def search(field,id_field,index,recheck,get_url,BUFFER=False): #TODO: That line 
             ids         = set(doc['_source'][field]) if field in doc['_source'] and doc['_source'][field] != None else set([]);
             for refobj in _refobjs:
                 previous_refobjects                      = doc['_source'][refobj] if refobj in doc['_source'] and doc['_source'][refobj] else None;
-                new_ids, new_refobjects                  = get_url(previous_refobjects,field,id_field,cur) if isinstance(previous_refobjects,list) else (set([]),previous_refobjects);
+                new_ids, new_refobjects                  = get_url(previous_refobjects,field,id_field,cur,USE_BUFFER) if isinstance(previous_refobjects,list) else (set([]),previous_refobjects);
                 ids                                     |= new_ids;
                 body['_source']['doc'][refobj]           = new_refobjects; # The updated ones
                 body['_source']['doc'][field+'_'+refobj] = list(new_ids);
@@ -136,6 +114,8 @@ def search(field,id_field,index,recheck,get_url,BUFFER=False): #TODO: That line 
                 scroll_tries += 1;
                 time.sleep(3); continue;
             break;
+        #if USE_BUFFER:
         con.commit();
+    #if USE_BUFFER:
     con.close();
     client.clear_scroll(scroll_id=sid);

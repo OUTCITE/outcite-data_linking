@@ -9,7 +9,7 @@ from common import *
 from pathlib import Path
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-GLOBAL OBJECTS----------------------------------------------------------------------------------------------------------------------------------
-_index            = sys.argv[1]; #'geocite' #'ssoar'
+_index = sys.argv[1]; #'geocite' #'ssoar'
 
 IN = None;
 try:
@@ -24,12 +24,15 @@ _buffer = _configs['buffer_econbiz'];
 _chunk_size      = _configs['chunk_size_econbiz'];
 _request_timeout = _configs['requestimeout_econbiz'];
 
+_check   = _configs['check_econbiz'];
 _recheck = _configs['recheck_econbiz'];
 _retest  = _configs['retest_econbiz']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
 _resolve = _configs['resolve_econbiz']; # Replaces the URL with the redirected URL if there should be redirection
 
 _refobjs = _configs['refobjs'];
 
+URL = re.compile(r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))(([\w.\-\/,@?^=%&:~+#]|([\.\-\/=] ))*[\w@?^=%&\/~+#])');
+DOI = re.compile(r'((https?:\/\/)?(www\.)?doi.org\/)?10.\d{4,9}\/[-._;()\/:A-Z0-9]+');
 #====================================================================================
 _index_m    = 'econbiz'; # Not actually required for crossref as the id is already the doi
 _from_field = 'econbiz_id';
@@ -38,7 +41,7 @@ _to_field   = 'econbiz_urls';
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi not the url
+def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=False): # This actually gets the doi not the url
     ids = [];
     for i in range(len(refobjects)):
         url = None;
@@ -48,11 +51,11 @@ def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi no
             page   = _client_m.search(index=_index_m, body={"query":{"term":{"id.keyword":opa_id}}} );
             doi    = page['hits']['hits'][0]['_source']['doi']  if len(page['hits']['hits'])>0 and 'doi'  in page['hits']['hits'][0]['_source'] else None;
             urls   = page['hits']['hits'][0]['_source']['urls'] if len(page['hits']['hits'])>0 and 'urls' in page['hits']['hits'][0]['_source'] else [];
-            url    = doi2url(doi,cur) if doi else urls[0] if urls else 'https://www.econbiz.de/Record/'+opa_id;
+            url    = doi2url(doi,cur,USE_BUFFER) if doi else urls[0] if urls else 'https://www.econbiz.de/Record/'+opa_id;
             url    = urls[0] if (not url) and urls else 'https://www.econbiz.de/Record/'+opa_id if not url else url;
         else:
             continue;
-        ID = check(url,_resolve,cur,5) if url else None;
+        ID = check(url,_resolve,cur,5,USE_BUFFER) if _check else url if url and URL.match(url) else None;
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);

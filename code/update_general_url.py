@@ -27,6 +27,7 @@ _buffer = _configs['buffer_general'];
 _chunk_size      = _configs['chunk_size_general'];
 _request_timeout = _configs['requestimeout_general'];
 
+_check   = _configs['check_general'];
 _recheck = _configs['recheck_general'];
 _retest  = _configs['retest_general']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
 _resolve = _configs['resolve_general']; # Replaces the URL with the redirected URL if there should be redirection
@@ -36,6 +37,8 @@ _refobjs = _configs['refobjs'];
 ARXIVURL = re.compile("((https?:\/\/www\.)|(https?:\/\/)|(www\.))arxiv\.org\/(abs|pdf)\/[0-9]+\.[0-9]+(\.pdf)?");
 ARXIVID = re.compile("[0-9]+\.[0-9]+");
 
+URL = re.compile(r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))(([\w.\-\/,@?^=%&:~+#]|([\.\-\/=] ))*[\w@?^=%&\/~+#])');
+DOI = re.compile(r'((https?:\/\/)?(www\.)?doi.org\/)?10.\d{4,9}\/[-._;()\/:A-Z0-9]+');
 #====================================================================================
 _from_field = _target+'_id' if _target=='ssoar' or _target=='arxiv' else _target+'_doi' if _target else 'doi';
 _to_field   = _target+'_general_urls' if _target else 'extracted_general_urls'; # WARNING: The difference to the usual procedure is that this is used multiple times for different _target, which means processed_general_url=true
@@ -46,15 +49,15 @@ _to_field   = _target+'_general_urls' if _target else 'extracted_general_urls'; 
 def get_best_general_url(urls): #TODO: Can be specified
     return urls[0] if len(urls)>0 else None;
 
-def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi not the url
+def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=False): # This actually gets the doi not the url
     ids = [];
     for i in range(len(refobjects)):
         #print(id_field,'ssoar_id' in refobjects[i] and refobjects[i]['ssoar_id']);
         url_ = None;
         if id_field=='ssoar_id' and 'ssoar_id' in refobjects[i] and refobjects[i]['ssoar_id'] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
-            handle                    = refobjects[i]['ssoar_id'].split('-')[-1];
-            url                       = 'https://www.ssoar.info/ssoar/handle/document/'+handle;
-            url                       = check(url,False,cur,5);
+            handle  = refobjects[i]['ssoar_id'].split('-')[-1];
+            url     = 'https://www.ssoar.info/ssoar/handle/document/'+handle;
+            url     = check(url,_resolve,cur,5,USE_BUFFER) if _check else url if url and URL.match(url) else None;
             if url:
                 refobjects[i][field[:-1]] = url;
                 url_                      = url;
@@ -71,7 +74,7 @@ def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi no
         elif id_field in refobjects[i] and refobjects[i][id_field] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
             doi = refobjects[i][id_field].lower().rstrip('.'); print('--->',doi);
             if not ( doi.startswith('arxiv:') or (doi.startswith('abs/') and ARXIVID.search(doi)) ):
-                url = doi2url(doi,cur);
+                url = doi2url(doi,cur,USE_BUFFER);
                 if url and not url.endswith('.pdf') and not ARXIVURL.match(url):
                     refobjects[i][field[:-1]] = url;
                     url_                      = url;

@@ -24,10 +24,13 @@ _buffer = _configs['buffer_research_data'];
 _chunk_size      = _configs['chunk_size_research_data'];
 _request_timeout = _configs['requestimeout_research_data'];
 
+_check   = _configs['check_research_data'];
 _recheck = _configs['recheck_research_data'];
 _retest  = _configs['retest_research_data']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
 _resolve = _configs['resolve_research_data']; # Replaces the URL with the redirected URL if there should be redirection
 
+URL = re.compile(r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))(([\w.\-\/,@?^=%&:~+#]|([\.\-\/=] ))*[\w@?^=%&\/~+#])');
+DOI = re.compile(r'((https?:\/\/)?(www\.)?doi.org\/)?10.\d{4,9}\/[-._;()\/:A-Z0-9]+');
 #====================================================================================
 _index_m    = 'research_data'; # Not actually required for crossref as the id is already the doi
 _from_field = 'research_data_id';
@@ -36,7 +39,7 @@ _to_field   = 'research_data_urls';
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field,cur=None):
+def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=False):
     ids = [];
     for i in range(len(refobjects)):
         print(refobjects[i]);
@@ -47,8 +50,7 @@ def get_url(refobjects,field,id_field,cur=None):
         else:
             #print(id_field,'not in reference.');
             continue;
-        #TODO: This should simply give you a URL and some result snippet or so
-        ID = check(url,_resolve,cur,5);
+        ID = check(url,_resolve,cur,5,USE_BUFFER) if _check else url if url and URL.match(url) else None;
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);

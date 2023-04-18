@@ -24,10 +24,13 @@ _buffer = _configs['buffer_gesis_bib'];
 _chunk_size      = _configs['chunk_size_gesis_bib'];
 _request_timeout = _configs['requestimeout_gesis_bib'];
 
+_check   = _configs['check_gesis_bib'];
 _recheck = _configs['recheck_gesis_bib'];
 _retest  = _configs['retest_gesis_bib']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
 _resolve = _configs['resolve_gesis_bib']; # Replaces the URL with the redirected URL if there should be redirection
 
+URL = re.compile(r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))(([\w.\-\/,@?^=%&:~+#]|([\.\-\/=] ))*[\w@?^=%&\/~+#])');
+DOI = re.compile(r'((https?:\/\/)?(www\.)?doi.org\/)?10.\d{4,9}\/[-._;()\/:A-Z0-9]+');
 #====================================================================================
 _index_m    = 'gesis_bib'; # Not actually required for crossref as the id is already the doi
 _from_field = 'gesis_bib_id';
@@ -36,7 +39,7 @@ _to_field   = 'gesis_bib_urls';
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field,cur=None):
+def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=False):
     ids = [];
     for i in range(len(refobjects)):
         print(refobjects[i]);
@@ -47,8 +50,7 @@ def get_url(refobjects,field,id_field,cur=None):
         else:
             #print(id_field,'not in reference.');
             continue;
-        #TODO: This should simply give you a URL and some result snippet or so
-        ID = check(url,_resolve,cur,5);
+        ID = check(url,_resolve,cur,5,USE_BUFFER) if _check else url if url and URL.match(url) else None;
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);

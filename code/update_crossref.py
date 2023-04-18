@@ -24,10 +24,13 @@ _buffer = _configs['buffer_crossref'];
 _chunk_size      = _configs['chunk_size_crossref'];
 _request_timeout = _configs['requestimeout_crossref'];
 
+_check   = _configs['check_crossref'];
 _recheck = _configs['recheck_crossref'];
 _retest  = _configs['retest_crossref']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
 _resolve = _configs['resolve_crossref']; # Replaces the URL with the redirected URL if there should be redirection
 
+URL = re.compile(r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))(([\w.\-\/,@?^=%&:~+#]|([\.\-\/=] ))*[\w@?^=%&\/~+#])');
+DOI = re.compile(r'((https?:\/\/)?(www\.)?doi.org\/)?10.\d{4,9}\/[-._;()\/:A-Z0-9]+');
 #====================================================================================
 _index_m    = 'crossref'; # Not actually required for crossref as the id is already the doi
 _from_field = 'crossref_id';
@@ -36,17 +39,17 @@ _to_field   = 'crossref_urls';
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field,cur=None):
+def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=False):
     ids = [];
     for i in range(len(refobjects)):
         url = None;
         ID  = None;
         if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
-            url = doi2url(refobjects[i][id_field],);
+            url = doi2url(refobjects[i][id_field],cur,USE_BUFFER);
         else:
             #print(id_field,'not in reference.');
             continue;
-        ID = check(url,_resolve,cur,5) if url else None;
+        ID = check(url,_resolve,cur,5,USE_BUFFER) if _check else url if url and URL.match(url) else None;
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);
