@@ -39,7 +39,7 @@ _to_field   = 'crossref_urls';
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=False):
+def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None):
     ids = [];
     for i in range(len(refobjects)):
         url = None;

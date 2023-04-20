@@ -49,7 +49,7 @@ _to_field   = _target+'_general_urls' if _target else 'extracted_general_urls'; 
 def get_best_general_url(urls): #TODO: Can be specified
     return urls[0] if len(urls)>0 else None;
 
-def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=False): # This actually gets the doi not the url
+def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): # This actually gets the doi not the url
     ids = [];
     for i in range(len(refobjects)):
         #print(id_field,'ssoar_id' in refobjects[i] and refobjects[i]['ssoar_id']);

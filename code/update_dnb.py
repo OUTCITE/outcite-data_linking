@@ -9,7 +9,7 @@ from common import *
 from pathlib import Path
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-GLOBAL OBJECTS----------------------------------------------------------------------------------------------------------------------------------
-_index            = sys.argv[1]; #'geocite' #'ssoar'
+_index = sys.argv[1]; #'geocite' #'ssoar'
 
 IN = None;
 try:
@@ -39,7 +39,7 @@ _to_field   = 'dnb_urls';
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=False): #TODO: For some reason the old incorreect dnb_url is not overwritten
+def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): #TODO: For some reason the old incorreect dnb_url is not overwritten
     ids = [];
     for i in range(len(refobjects)):
         url = None;

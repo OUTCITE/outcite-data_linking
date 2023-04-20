@@ -9,7 +9,7 @@ from common import *
 from pathlib import Path
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-GLOBAL OBJECTS----------------------------------------------------------------------------------------------------------------------------------
-_index            = sys.argv[1]; #'geocite' #'ssoar'
+_index = sys.argv[1]; #'geocite' #'ssoar'
 
 IN = None;
 try:
@@ -36,7 +36,7 @@ _to_field   = 'sowiport_urls';
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field,cur=None):
+def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None):
     ids = [];
     for i in range(len(refobjects)):
         print(refobjects[i]);
@@ -48,7 +48,7 @@ def get_url(refobjects,field,id_field,cur=None):
             #print(id_field,'not in reference.');
             continue;
         #TODO: This should simply give you a URL and some result snippet or so
-        ID = check(url,_resolve,cur,5);
+        ID = check(url,_resolve,cur,5,USE_BUFFER);
         if ID != None:
             refobjects[i][field[:-1]] = ID;
             ids.append(ID);

@@ -9,7 +9,7 @@ from common import *
 from pathlib import Path
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-GLOBAL OBJECTS----------------------------------------------------------------------------------------------------------------------------------
-_index            = sys.argv[1]; #'geocite' #'ssoar'
+_index = sys.argv[1]; #'geocite' #'ssoar'
 
 IN = None;
 try:
@@ -36,7 +36,7 @@ _to_field   = 'openalex_urls';
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field,cur=None):
+def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None):
     ids = [];
     for i in range(len(refobjects)):
         #print(refobjects[i]);
@@ -45,7 +45,7 @@ def get_url(refobjects,field,id_field,cur=None):
         if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
             opa_id = refobjects[i][id_field];
             page   = _client_m.search(index=_index_m, body={"query":{"term":{"id.keyword":opa_id}}} );
-            doi    = doi2url(page['hits']['hits'][0]['_source']['doi'],cur) if len(page['hits']['hits'])>0 and 'doi' in page['hits']['hits'][0]['_source'] and page['hits']['hits'][0]['_source']['doi'] else None;
+            doi    = doi2url(page['hits']['hits'][0]['_source']['doi'],cur,USE_BUFFER) if len(page['hits']['hits'])>0 and 'doi' in page['hits']['hits'][0]['_source'] and page['hits']['hits'][0]['_source']['doi'] else None;
             link   = page['hits']['hits'][0]['_source']['url'] if len(page['hits']['hits'])>0 and 'url' in page['hits']['hits'][0]['_source'] else None;
             url    = doi if doi else link if link else opa_id if opa_id else None;
             print(url);

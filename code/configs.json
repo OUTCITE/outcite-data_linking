@@ -17,18 +17,6 @@
 
     "ids": null,
 
-    "buffer_sowiport":      true,
-    "buffer_crossref":      true,
-    "buffer_dnb":           true,
-    "buffer_openalex":      true,
-    "buffer_arxiv":         true,
-    "buffer_gesis_bib":     true,
-    "buffer_research_data": true,
-    "buffer_ssoar":         true,
-    "buffer_econbiz":       true,
-    "buffer_pdf":           true,
-    "buffer_general":       true,
-
     "chunk_size_sowiport":      50,
     "chunk_size_crossref":      50,
     "chunk_size_dnb":           50,
@@ -64,6 +52,18 @@
     "check_econbiz":       false,
     "check_pdf":           false,
     "check_general":       false,
+
+    "buffer_sowiport":      "rw",
+    "buffer_crossref":      "rw",
+    "buffer_dnb":           "rw",
+    "buffer_openalex":      "rw",
+    "buffer_arxiv":         "rw",
+    "buffer_gesis_bib":     "rw",
+    "buffer_research_data": "rw",
+    "buffer_ssoar":         "rw",
+    "buffer_econbiz":       "rw",
+    "buffer_pdf":           "rw",
+    "buffer_general":       "rw",
 
     "recheck_sowiport":      false,
     "recheck_crossref":      false,

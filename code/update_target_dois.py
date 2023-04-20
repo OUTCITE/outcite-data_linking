@@ -37,7 +37,7 @@ _to_field   = _target+'_dois';
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field,cur=None): # This actually gets the doi not the url
+def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): # This actually gets the doi not the url
     ids = [];
     for i in range(len(refobjects)):
         #print(refobjects[i]);
