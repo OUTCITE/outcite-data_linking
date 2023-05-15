@@ -39,13 +39,13 @@ _to_field   = 'dnb_urls';
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): #TODO: For some reason the old incorreect dnb_url is not overwritten
+def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): #TODO: This not working still, returns no ids
     ids = [];
     for i in range(len(refobjects)):
         url = None;
         ID  = None;
         if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
-            page    = _client_m.search(index=_index_m, query={"term":{"id":refobjects[i][id_field]}} );
+            page    = _client_m.search(index=_index_m, query={"term":{"id.keyword":refobjects[i][id_field]}} );
             dnb_ids = page['hits']['hits'][0]['_source']['ids'] if len(page['hits']['hits'])>0 and 'ids' in page['hits']['hits'][0]['_source'] and len(page['hits']['hits'][0]['_source']['ids'])>0 else [];
             dnb_id  = None;
             for el in dnb_ids:

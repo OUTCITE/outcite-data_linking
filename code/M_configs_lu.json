@@ -1,0 +1,17 @@
+{
+
+    "recheck": true,
+
+    "chunk_size": 200,
+
+    "scroll_size": 100,
+
+    "max_scroll_tries": 2,
+
+    "max_extract_time": 1,
+
+    "request_wait": 10,
+
+    "redownload": false
+
+}
