@@ -130,7 +130,7 @@ def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): # This actually
         if _workers>1:
             pool.apply_async(get_url_for, args=(refobjects[i],i,field,id_field,None,'r' if (USE_BUFFER=='rw' or USE_BUFFER=='r') else None,), callback=append_result);
         else:
-            _temp_parallel_results.append(get_url_for(refobjects[i],i,field,id_field,cur,USE_BUFFER)+[i]);
+            _temp_parallel_results.append(get_url_for(refobjects[i],i,field,id_field,cur,USE_BUFFER));
     if _workers>1:
         pool.close(); pool.join();
     #print(_temp_parallel_results);
