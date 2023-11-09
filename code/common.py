@@ -97,7 +97,7 @@ def search(field,id_field,index,recheck,get_url,USE_BUFFER=None): #TODO: That li
             for refobj in _refobjs:
                 previous_refobjects                      = doc['_source'][refobj] if refobj in doc['_source'] and doc['_source'][refobj] else None;
                 new_ids, new_refobjects                  = get_url(previous_refobjects,field,id_field,cur,USE_BUFFER) if isinstance(previous_refobjects,list) else (set([]),previous_refobjects);
-                ids                                      = new_ids; #This used to be |= but now the functionality is different
+                ids                                     |= new_ids; #TODO: Switched back to |= as I dont get it #This used to be |= but now the functionality is different
                 body['_source']['doc'][refobj]           = new_refobjects; # The updated ones
                 body['_source']['doc'][field+'_'+refobj] = list(new_ids);
                 #print('-->',refobj,'gave',['','no '][len(new_ids)==0]+'ids',', '.join(new_ids),'\n');

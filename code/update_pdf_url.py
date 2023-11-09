@@ -37,7 +37,7 @@ _recheck = _configs['recheck_pdf'];
 _retest  = _configs['retest_pdf']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
 _resolve = _configs['resolve_pdf']; # Replaces the URL with the redirected URL if there should be redirection
 
-_refobjs = _configs['refobjs'];
+_refobjs = _configs['refobjs']; #TODO: I think this is not used?
 
 ARXIVURL = re.compile("((https?:\/\/www\.)|(https?:\/\/)|(www\.))arxiv\.org\/(abs|pdf)\/[0-9]+\.[0-9]+(\.pdf)?");
 ARXIVPDF = re.compile("((https?:\/\/www\.)|(https?:\/\/)|(www\.))arxiv\.org\/pdf\/[0-9]+\.[0-9]+(\.pdf)?");

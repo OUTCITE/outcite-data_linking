@@ -7,9 +7,11 @@ from elasticsearch import Elasticsearch as ES
 from elasticsearch.helpers import streaming_bulk as bulk
 from common import *
 from pathlib import Path
-#-------------------------------------------------------------------------------------------------------------------------------------------------
+import multiprocessing as mp
+#------------------------------------------------------------------------------------------------------------------------------------------------- #TODO: STILL NEEDS TO BE TESTED!
 #-GLOBAL OBJECTS----------------------------------------------------------------------------------------------------------------------------------
 _index = sys.argv[1]; #'geocite' #'ssoar'
+_workers = int(sys.argv[2]) if len(sys.argv)>2 else 1;
 
 IN = None;
 try:
@@ -36,25 +38,45 @@ _index_m    = 'crossref'; # Not actually required for crossref as the id is alre
 _from_field = 'crossref_id';
 _to_field   = 'crossref_urls';
 #====================================================================================
+
+_temp_parallel_results = None;
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
-def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None):
-    ids = [];
+def append_result(result):
+    global _temp_parallel_results
+    _temp_parallel_results.append(result);
+
+def get_url_for(refobject,listindex,field,id_field,cur,USE_BUFFER): #TODO: If I want to store the resolved urls then I need to return the results and store them outside this function!
+    url        = None;
+    resolution = (None,None,None,);
+    if id_field in refobject and refobject[id_field] and (_retest or not (_to_field[:-1] in refobject and refobject[_to_field[:-1]])):
+        doi        = doi2url(refobject[id_field],cur,USE_BUFFER);
+        url        = check(doi,_resolve,cur,5) if doi else None;
+        resolution = (doi,418,doi,) if not url else (doi,200,url,);
+    return [[url] if url else [], refobject, resolution, listindex];
+
+def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): # This actually gets the doi not the url 
+    global _temp_parallel_results
+    _temp_parallel_results = [];
+    ids                    = [];
+    resolutions            = [];
+    pool                   = mp.Pool(_workers) if _workers>1 else None;
     for i in range(len(refobjects)):
-        url = None;
-        ID  = None;
-        if id_field in refobjects[i] and (_retest or not (_to_field[:-1] in refobjects[i] and refobjects[i][_to_field[:-1]])):
-            url = doi2url(refobjects[i][id_field],cur,USE_BUFFER);
+        if _workers>1:
+            pool.apply_async(get_url_for, args=(refobjects[i],i,field,id_field,None,'r' if (USE_BUFFER=='rw' or USE_BUFFER=='r') else None,), callback=append_result);
         else:
-            #print(id_field,'not in reference.');
-            continue;
-        ID = check(url,_resolve,cur,5,USE_BUFFER) if _check else url if url and URL.match(url) else None;
-        if ID != None:
-            refobjects[i][field[:-1]] = ID;
-            ids.append(ID);
-        else:
-            print('URL',url,'did not',['match URL pattern','check out'][_check]);
+            _temp_parallel_results.append(get_url_for(refobjects[i],i,field,id_field,cur,USE_BUFFER));
+    if _workers>1:
+        pool.close(); pool.join();
+    #print(_temp_parallel_results);
+    for ids_,refobject,resolution,listindex in _temp_parallel_results:
+        ids                  += ids_;
+        refobjects[listindex] = refobject; #TODO: BUG: i was out of scope! Does it work now?
+        resolutions.append(resolution);
+    if _workers > 1 and cur and (USE_BUFFER=='rw' or USE_BUFFER=='w'): # Write the results to DB after the parallel step, uses 418 for error and 200 for success
+        print('Storing resolutions to DB...')
+        cur.executemany("INSERT OR REPLACE INTO urls VALUES(?,?,?)",((url,status,new_url,) for url,status,new_url in resolutions if url and status and new_url));
     return set(ids), refobjects;
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------
