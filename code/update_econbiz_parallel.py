@@ -53,14 +53,15 @@ def get_url_for(refobject,listindex,field,id_field,cur,USE_BUFFER): #TODO: If I 
     url        = None;
     resolution = (None,None,None,);
     if id_field in refobject and refobject[id_field] and (_retest or not (_to_field[:-1] in refobject and refobject[_to_field[:-1]])):
-        opa_id     = refobject[id_field];
-        page       = _client_m.search(index=_index_m, body={"query":{"term":{"id.keyword":opa_id}}} );
-        doi        = page['hits']['hits'][0]['_source']['doi']  if len(page['hits']['hits'])>0 and 'doi'  in page['hits']['hits'][0]['_source'] else None;
-        urls       = page['hits']['hits'][0]['_source']['urls'] if len(page['hits']['hits'])>0 and 'urls' in page['hits']['hits'][0]['_source'] else [];
-        url        = doi2url(doi,cur,USE_BUFFER) if doi else urls[0] if urls else 'https://www.econbiz.de/Record/'+opa_id;
-        url        = urls[0] if (not url) and urls else 'https://www.econbiz.de/Record/'+opa_id if not url else url;
-        url        = check(url,_resolve,cur,5) if url else None;
-        resolution = (doi,418,doi,) if not url else (doi,200,url,);
+        opa_id                = refobject[id_field];
+        page                  = _client_m.search(index=_index_m, body={"query":{"term":{"id.keyword":opa_id}}} );
+        doi                   = page['hits']['hits'][0]['_source']['doi']  if len(page['hits']['hits'])>0 and 'doi'  in page['hits']['hits'][0]['_source'] else None;
+        urls                  = page['hits']['hits'][0]['_source']['urls'] if len(page['hits']['hits'])>0 and 'urls' in page['hits']['hits'][0]['_source'] else [];
+        url                   = doi2url(doi,cur,USE_BUFFER) if doi else urls[0] if urls else 'https://www.econbiz.de/Record/'+opa_id;
+        url                   = urls[0] if (not url) and urls else 'https://www.econbiz.de/Record/'+opa_id if not url else url;
+        url                   = check(url,_resolve,cur,5) if url else None;
+        resolution            = (doi,418,doi,) if not url else (doi,200,url,);
+        refobject[field[:-1]] = url;
     return [[url] if url else [], refobject, resolution, listindex];
 
 def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): # This actually gets the doi not the url 

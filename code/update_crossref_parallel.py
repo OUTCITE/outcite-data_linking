@@ -51,9 +51,10 @@ def get_url_for(refobject,listindex,field,id_field,cur,USE_BUFFER): #TODO: If I 
     url        = None;
     resolution = (None,None,None,);
     if id_field in refobject and refobject[id_field] and (_retest or not (_to_field[:-1] in refobject and refobject[_to_field[:-1]])):
-        doi        = doi2url(refobject[id_field],cur,USE_BUFFER);
-        url        = check(doi,_resolve,cur,5) if doi else None;
-        resolution = (doi,418,doi,) if not url else (doi,200,url,);
+        doi                   = doi2url(refobject[id_field],cur,USE_BUFFER);
+        url                   = check(doi,_resolve,cur,5) if doi else None;
+        resolution            = (doi,418,doi,) if not url else (doi,200,url,);
+        refobject[field[:-1]] = url;
     return [[url] if url else [], refobject, resolution, listindex];
 
 def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): # This actually gets the doi not the url 
