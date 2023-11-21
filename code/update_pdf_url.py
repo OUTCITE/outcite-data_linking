@@ -39,12 +39,12 @@ _resolve = _configs['resolve_pdf']; # Replaces the URL with the redirected URL i
 
 _refobjs = _configs['refobjs']; #TODO: I think this is not used?
 
-ARXIVURL = re.compile("((https?:\/\/www\.)|(https?:\/\/)|(www\.))arxiv\.org\/(abs|pdf)\/[0-9]+\.[0-9]+(\.pdf)?");
-ARXIVPDF = re.compile("((https?:\/\/www\.)|(https?:\/\/)|(www\.))arxiv\.org\/pdf\/[0-9]+\.[0-9]+(\.pdf)?");
-ARXIVID  = re.compile("[0-9]+\.[0-9]+");
+ARXIVURL = re.compile(_configs['regex_arxiv_url']); #"((https?:\/\/www\.)|(https?:\/\/)|(www\.))arxiv\.org\/(abs|pdf)\/[0-9]+\.[0-9]+(\.pdf)?"
+ARXIVPDF = re.compile(_configs['regex_arxiv_pdf']); #"((https?:\/\/www\.)|(https?:\/\/)|(www\.))arxiv\.org\/pdf\/[0-9]+\.[0-9]+(\.pdf)?"
+ARXIVID  = re.compile(_configs['regex_arxiv_id']);  #"[0-9]+\.[0-9]+"
 
-URL = re.compile(r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))(([\w.\-\/,@?^=%&:~+#]|([\.\-\/=] ))*[\w@?^=%&\/~+#])');
-DOI = re.compile(r'((https?:\/\/)?(www\.)?doi.org\/)?10.\d{4,9}\/[-._;()\/:A-Z0-9]+');
+URL = re.compile('regex_url'); #r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))(([\w.\-\/,@?^=%&:~+#]|([\.\-\/=] ))*[\w@?^=%&\/~+#])'
+DOI = re.compile('regex_doi'); #r'((https?:\/\/)?(www\.)?doi.org\/)?10.\d{4,9}\/[-._;()\/:A-Z0-9]+'
 #====================================================================================
 _from_field = _target+'_id' if _target=='ssoar' or _target=='arxiv' else _target+'_doi' if _target else 'doi';
 _to_field   = _target+'_'+_mapping+'_fulltext_urls' if _target else 'extracted_'+_mapping+'_fulltext_urls'; # WARNING: The difference to the usual procedure is that this is used multiple times for different _target, which means processed_fulltext_url=true

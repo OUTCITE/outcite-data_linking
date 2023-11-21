@@ -1,0 +1,79 @@
+![data_linking](uploads/04be832b2a3bfd55cf628524a51cd5a1/data_linking.png)
+
+This finds URLs for a given match from an extracted reference to a target collection. For most target collections, an obvious URL can be constructed for the collection or taken from one of the collection’s metadata fields. In addition, DOIs from the target collections or as extracted from the reference itself can be resolved and also looked up in core repository or unpaywall (to get additional (fulltext) URLs). URLs can also sometimes be extracted from the references themselves.
+
+# Fetch URLs from Matches
+
+This creates (and may check) URLs in the straightforward target-collection-dependent way.
+
+`for target in ssoar gesis_bib research_data dnb arxiv; do
+    python code/update_${target}.py <outcite_ssoar>;
+done`
+
+`for target in econbiz crossref openalex; do
+    python code/update_${target}_parallel.py <outcite_ssoar> <16>;
+done`
+
+1. Fetch URLs from SSOAR: **python code/[update_ssoar.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_ssoar.py "update_ssoar.py") \<outcite_ssoar\>**
+2. Fetch URLs from GESIS BIB: **python code/[update_gesis_bib.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_gesis_bib.py "update_gesis_bib.py") \<outcite_ssoar\>**
+3. Fetch URLs from GESIS Datasets: **python code/[update_research_data.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_research_data.py "update_research_data.py") \<outcite_ssoar\>**
+4. Fetch URLs from DNB: **python code/[update_dnb.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_dnb.py "update_dnb.py") \<outcite_ssoar\>**
+5. Fetch URLs from Arxiv: **python code/[update_arxiv.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_arxiv.py "update_arxiv.py") \<outcite_ssoar\>**
+6. Fetch URLs from Econbiz: **python code/[update_econbiz_parallel.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_econbiz_parallel.py "update_econbiz.py") \<outcite_ssoar\> \<16\>**
+7. Fetch URLs from Crossref: **python code/[update_crossref_parallel.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_crossref.py "update_crossref.py") \<outcite_ssoar\> \<16\>**
+8. Fetch URLs from Openalex: **python code/[update_openalex_parallel.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_openalex.py "update_openalex.py") \<outcite_ssoar\> \<16\>**
+
+# Fetch DOIs from Matches
+
+This checks if for a match, there are dois available in the matched entry of the respective target collection and writes the into the reference object in the OUTCITE SSOAR index.
+
+`for target in research_data openalex econbiz; do
+    python code/update_target_dois.py <outcite_ssoar> $target;
+done`
+
+`python code/update_crossref_dois.py <outcite_ssoar>`
+
+1. Fetch DOIs from matches to GESIS Datasets: **python code/[update_target_dois.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_target_dois.py "update_target_dois.py") \<outcite_ssoar\> research_data**
+2. Fetch DOIs from matches to Openalex: **python code/[update_target_dois.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_target_dois.py "update_target_dois") \<outcite_ssoar\> openalex**
+3. Fetch DOIs from matches to Econbiz: **python code/[update_target_dois.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_target_dois.py "update_target_dois.py") \<outcite_ssoar\> econbiz**
+4. Fetch DOIs from matches to Crossref: **python code/[update_crossref_dois.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_crossref_dois.py "update_crossref_dois.py") \<outcite_ssoar\>**
+
+# Fetch URLs from DOIs
+
+This looks up DOIs given for extracted references in either the core repository or in the unpaywall repository, which returns URLs. If the URLs are determined to correspond to a PDF file, then they are added as fulltext URL, otherwise as general URL.
+
+## Look up General URLs for DOI
+
+`for target in ssoar arxiv research_data openalex econbiz crossref; do
+    python code/update_general_url.py <outcite_ssoar> $target;
+done`
+
+1. Look up general URL for SSOAR DOI: **python code/[update_general_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_general_url.py "update_general_url.py") \<outcite_ssoar\> ssoar**
+2. Look up general URL for Arxiv DOI: **python code/[update_general_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_general_url.py) \<outcite_ssoar\> arxiv**
+3. Look up general URL for GESIS Datasets DOI: **python code/[update_general_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_general_url.py) \<outcite_ssoar\> research_data**
+4. Look up general URL for Openalex DOI: **python code/[update_general_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_general_url.py) \<outcite_ssoar\> openalex**
+5. Look up general URL for Econbiz DOI: **python code/[update_general_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_general_url.py) \<outcite_ssoar\> econbiz**
+6. Look up general URL for Crossref DOI: **python code/[update_general_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_general_url.py) \<outcite_ssoar\> crossref**
+
+## Look up PDF URLs for DOI
+
+`for repository in core unpaywall; do
+    for target in ssoar arxiv research_data openalex econbiz crossref; do
+        python code/update_pdf_url.py <outcite_ssoar> resources/${repository}.db $target <32>;
+    done;
+done`
+
+ 1. PDF URL from CORE for SSOAR DOI: **python code/[update_pdf_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_pdf_url.py) \<outcite_ssoar\> resources/core.db ssoar \<32\>**
+ 2. PDF URL from CORE for Arxiv DOI: **python code/[update_pdf_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_pdf_url.py) \<outcite_ssoar\> resources/core.db arxiv \<32\>**
+ 3. PDF URL from CORE for GESIS Datasets DOI: **python code/[update_pdf_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_pdf_url.py) \<outcite_ssoar\> resources/core.db research_data \<32\>**
+ 4. PDF URL from CORE for Openalex DOI: **python code/[update_pdf_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_pdf_url.py) \<outcite_ssoar\> resources/core.db openalex \<32\>**
+ 5. PDF URL from CORE for Econbiz DOI: **python code/[update_pdf_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_pdf_url.py) \<outcite_ssoar\> resources/core.db econbiz \<32\>**
+ 6. PDF URL from CORE for Crossref DOI: **python code/[update_pdf_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_pdf_url.py) \<outcite_ssoar\> resources/core.db crossref \<32\>**
+ 7. PDF URL from Unpaywall for SSOAR DOI: **python code/[update_pdf_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_pdf_url.py) \<outcite_ssoar\> resources/unpaywall.db ssoar \<32\>**
+ 8. PDF URL from Unpaywall for Arxiv DOI: **python code/[update_pdf_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_pdf_url.py) \<outcite_ssoar\> resources/unpaywall.db arxiv \<32\>**
+ 9. PDF URL from Unpaywall for GESIS Datasets DOI: **python code/[update_pdf_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_pdf_url.py) \<outcite_ssoar\> resources/unpaywall.db research_data \<32\>**
+10. PDF URL from Unpaywall for Openalex DOI: **python code/[update_pdf_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_pdf_url.py) \<outcite_ssoar\> resources/unpaywall.db openalex \<32\>**
+11. PDF URL from Unpaywall for Econbiz DOI: **python code/[update_pdf_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_pdf_url.py) \<outcite_ssoar\> resources/unpaywall.db econbiz \<32\>**
+12. PDF URL from Unpaywall for Crossref DOI: **python code/[update_pdf_url.py](https://git.gesis.org/backests/data_linking/-/blob/master/code/update_pdf_url.py) \<outcite_ssoar\> resources/unpaywall.db crossref \<32\>**
+
+![doi2pdf](uploads/a1b8b39666d67d3309fdd25a207d2171/doi2pdf.png)

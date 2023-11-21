@@ -8,8 +8,6 @@ from pathlib import Path
 import re
 import sqlite3
 
-ARXIVID = re.compile("[0-9]+\.[0-9]+");
-
 IN = None;
 try:
     IN = open(str((Path(__file__).parent / '../code/').resolve())+'/configs_custom.json');
@@ -25,6 +23,8 @@ _scroll_size      = _configs['scroll_size'];
 _refobjs = _configs['refobjs'];
 
 _ids = _configs['ids'];
+
+ARXIVID = re.compile(_configs['regex_arxiv_id']); #r"[0-9]+\.[0-9]+"
 
 def check(url,RESOLVE=False,cur=None,timeout=5,USE_BUFFER=None):
     print('Checking URL',url,'...');
