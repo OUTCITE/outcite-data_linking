@@ -1,3 +1,4 @@
+#-IMPORTS-----------------------------------------------------------------------------------------------------------------------------------------
 from copy import deepcopy as copy
 from elasticsearch import Elasticsearch as ES
 import requests
@@ -7,7 +8,10 @@ import json
 from pathlib import Path
 import re
 import sqlite3
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#-GLOBAL OBJECTS----------------------------------------------------------------------------------------------------------------------------------
 
+# LOADING THE CONFIGS CUSTOM IF AVAILABLE OTHERWISE THE DEFAULT CONFIGS FILE
 IN = None;
 try:
     IN = open(str((Path(__file__).parent / '../code/').resolve())+'/configs_custom.json');
@@ -16,16 +20,23 @@ except:
 _configs = json.load(IN);
 IN.close();
 
+# MORE PARAMETERS FOR THE BULK UPDATING ELASTICSEARCH PROCESS
 _max_extract_time = _configs['max_extract_time']; #minutes
 _max_scroll_tries = _configs['max_scroll_tries'];
 _scroll_size      = _configs['scroll_size'];
 
+# THE PIPELINES FOR WHICH TO AMEND THE REFERENCES
 _refobjs = _configs['refobjs'];
 
+# THE SUBSET TO UPDATE IF ANY
 _ids = _configs['ids'];
 
+# REGEX FOR ARXIV IDS
 ARXIVID = re.compile(_configs['regex_arxiv_id']); #r"[0-9]+\.[0-9]+"
+#-------------------------------------------------------------------------------------------------------------------------------------------------
+#-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
+# CHECK AND POSSIBLY RESOLVE A GIVEN URL INCLUDING BUFFERING OF THE MAPPING TO LOCAL DATABASE
 def check(url,RESOLVE=False,cur=None,timeout=5,USE_BUFFER=None):
     print('Checking URL',url,'...');
     page   = None;
@@ -61,14 +72,17 @@ def check(url,RESOLVE=False,cur=None,timeout=5,USE_BUFFER=None):
         print('----> Could not resolve URL for some reason',url,'-- status:',status);
     return new_url if RESOLVE else url;
 
+# EXTRACT THE ARXIV ID OUT OF A GIVEN STRING
 def extract_arxiv_id(string):
     ids = [match.group() for match in ARXIVID.finditer(string)];
     return ids[0] if ids else None;
 
-def doi2url(doi,cur=None,USE_BUFFER=None):
+# TURN A DOI INTO A URL AND POSSIBLY FOLLOW THE REDIRECT CHAIN
+def doi2url(doi,cur=None,USE_BUFFER=None,RESOLVE=True):
     url   = 'https://doi.org/'+doi;
-    return check(url,True,cur,5,USE_BUFFER);
+    return check(url,RESOLVE,cur,5,USE_BUFFER);
 
+# MAIN FUNCTION TO UPDATE THE FIELD GIVEN THE ID FIELD
 def search(field,id_field,index,recheck,get_url,USE_BUFFER=None): #TODO: That line 91 scr_query did not solve the problem yet
     #----------------------------------------------------------------------------------------------------------------------------------
     body      = { '_op_type': 'update', '_index': index, '_id': None, '_source': { 'doc': { 'processed_'+field: True, field: None } } };
@@ -106,6 +120,7 @@ def search(field,id_field,index,recheck,get_url,USE_BUFFER=None): #TODO: That li
             body['_source']['doc']['processed_'+field] = True;
             body['_source']['doc']['has_'+field]       = len(ids) > 0;
             body['_source']['doc']['num_'+field]       = len(ids); print('-->','num_'+field,body['_source']['doc']['num_'+field])
+            con.commit();
             yield body;
         scroll_tries = 0;
         while scroll_tries < _max_scroll_tries:
@@ -125,3 +140,4 @@ def search(field,id_field,index,recheck,get_url,USE_BUFFER=None): #TODO: That li
     #if USE_BUFFER:
     con.close();
     client.clear_scroll(scroll_id=sid);
+#-------------------------------------------------------------------------------------------------------------------------------------------------

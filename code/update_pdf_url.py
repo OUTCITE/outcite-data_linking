@@ -12,6 +12,8 @@ import re
 import multiprocessing as mp
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-GLOBAL OBJECTS----------------------------------------------------------------------------------------------------------------------------------
+
+# THE INDEX TO UPDATE THE REFERENCES IN
 _index   = sys.argv[1]; #'geocite' #'ssoar'
 _dbfile  = sys.argv[2];#'resources/doi2pdfs.db';
 _target  = sys.argv[3] if len(sys.argv)>3 else None;
@@ -19,6 +21,7 @@ _workers = int(sys.argv[4]) if len(sys.argv)>4 else 1;
 
 _mapping = _dbfile.split('/')[-1].split('.')[0];
 
+# LOADING THE CONFIGS CUSTOM IF AVAILABLE OTHERWISE THE DEFAULT CONFIGS FILE
 IN = None;
 try:
     IN = open(str((Path(__file__).parent / '../code/').resolve())+'/configs_custom.json');
@@ -27,40 +30,51 @@ except:
 _configs = json.load(IN);
 IN.close();
 
-_buffer = _configs['buffer_pdf'];
-
+# PARAMETERS FOR THE BULK UPDATING ELASTICSEARCH PROCESS
 _chunk_size      = _configs['chunk_size_pdf'];
 _request_timeout = _configs['requestimeout_pdf'];
 
+# WHETHER TO BUFFER THE RESULTING URLS IN A LOCAL DATABASE
+_buffer = _configs['buffer_pdf'];
+
+# WHETHER TO CHECK IF THE URL GOES ANYWHERE
 _check   = _configs['check_pdf'];
+# WETHER TO REDO THE LINKING FOR DOCUMENTS THAT HAVE ALREADY BEEN LABELLED AS PROCESSED FOR THIS STEP BEFORE
 _recheck = _configs['recheck_pdf'];
+# WHETHER TO TEST THE URL EVEN IF IT WAS ALREADY SEEN BEFORE
 _retest  = _configs['retest_pdf']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
+# WHETHER TO REPLACE A URL BY THE END OF A REDIRECT CHAIN
 _resolve = _configs['resolve_pdf']; # Replaces the URL with the redirected URL if there should be redirection
 
-_refobjs = _configs['refobjs']; #TODO: I think this is not used?
-
+# REGEX FOR ARXIV URLS AND ARXIV IDS
 ARXIVURL = re.compile(_configs['regex_arxiv_url']); #"((https?:\/\/www\.)|(https?:\/\/)|(www\.))arxiv\.org\/(abs|pdf)\/[0-9]+\.[0-9]+(\.pdf)?"
 ARXIVPDF = re.compile(_configs['regex_arxiv_pdf']); #"((https?:\/\/www\.)|(https?:\/\/)|(www\.))arxiv\.org\/pdf\/[0-9]+\.[0-9]+(\.pdf)?"
 ARXIVID  = re.compile(_configs['regex_arxiv_id']);  #"[0-9]+\.[0-9]+"
 
+# REGEX FOR URLS AND DOIS
 URL = re.compile('regex_url'); #r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))(([\w.\-\/,@?^=%&:~+#]|([\.\-\/=] ))*[\w@?^=%&\/~+#])'
 DOI = re.compile('regex_doi'); #r'((https?:\/\/)?(www\.)?doi.org\/)?10.\d{4,9}\/[-._;()\/:A-Z0-9]+'
 #====================================================================================
+# FIELD NAME IN THE TARGET INDEX WHICH STORES THE ID FROM MATCHING
 _from_field = _target+'_id' if _target=='ssoar' or _target=='arxiv' else _target+'_doi' if _target else 'doi';
+# WHERE TO ADD THE URL FROM THE ABOVE TARGET INDEX FIELD
 _to_field   = _target+'_'+_mapping+'_fulltext_urls' if _target else 'extracted_'+_mapping+'_fulltext_urls'; # WARNING: The difference to the usual procedure is that this is used multiple times for different _target, which means processed_fulltext_url=true
 #====================================================================================
-
+# TECHNICALLY REQUIRED TO STORE RESULTS FROM PARALLELIZED PROCESSING
 _temp_parallel_results = None;
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
+# TECHNICALLY REQUIRED TO STORE RESULTS FROM PARALLELIZED PROCESSING
 def append_result(result):
     global _temp_parallel_results
     _temp_parallel_results.append(result);
 
+# CHOOSE THE BEST PDF URL IF MORE THAN ONE
 def get_best_pdf_url(urls): #TODO: Can be specified
     return urls[0] if len(urls)>0 else None;
 
+# OUTSOURCED URL RESOLUTION FOR PARALLEL PROCESSING
 def get_url_for(refobject,listindex,field,id_field,cur,USE_BUFFER): #TODO: If I want to store the resolved urls then I need to return the results and store them outside this function!
     con_lookup = sqlite3.connect(_dbfile);
     cur_lookup = con_lookup.cursor();
@@ -120,6 +134,7 @@ def get_url_for(refobject,listindex,field,id_field,cur,USE_BUFFER): #TODO: If I 
         con_buffer.close();
     return [ids, refobject, resolution, listindex];
 
+# MAIN FUNCTION TO GET THE PDF URL FOR A REFERENCE IF IT HAS A MATCH ID
 def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): # This actually gets the doi not the url 
     global _temp_parallel_results
     _temp_parallel_results = [];
@@ -146,9 +161,11 @@ def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): # This actually
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-SCRIPT------------------------------------------------------------------------------------------------------------------------------------------
 
+# CONNECTION TO THE LOCAL ELASTICSEARCH INSTANCE WHERE THE INDEX IS
 _client   = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
-_client_m = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
+#_client_m = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
 
+# BATCH UPDATING THE LOCAL DOCUMENTS INDEX WITH THE URLS
 i = 0;
 for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,_buffer),chunk_size=_chunk_size, request_timeout=_request_timeout):
     i += 1;

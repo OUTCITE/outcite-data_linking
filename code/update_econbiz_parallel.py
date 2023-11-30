@@ -10,9 +10,13 @@ from pathlib import Path
 import multiprocessing as mp
 #------------------------------------------------------------------------------------------------------------------------------------------------- #TODO: STILL NEEDS TO BE TESTED!
 #-GLOBAL OBJECTS----------------------------------------------------------------------------------------------------------------------------------
-_index = sys.argv[1]; #'geocite' #'ssoar'
+
+# THE INDEX TO UPDATE THE REFERENCES IN
+_index = sys.argv[1];
+# THE NUMBER OF PARALLEL PROCESSES FOR RESOLVING URLS
 _workers = int(sys.argv[2]) if len(sys.argv)>2 else 1;
 
+# LOADING THE CONFIGS CUSTOM IF AVAILABLE OTHERWISE THE DEFAULT CONFIGS FILE
 IN = None;
 try:
     IN = open(str((Path(__file__).parent / '../code/').resolve())+'/configs_custom.json');
@@ -21,49 +25,61 @@ except:
 _configs = json.load(IN);
 IN.close();
 
-_buffer = _configs['buffer_econbiz'];
-
+# PARAMETERS FOR THE BULK UPDATING ELASTICSEARCH PROCESS
 _chunk_size      = _configs['chunk_size_econbiz'];
 _request_timeout = _configs['requestimeout_econbiz'];
 
+# WHETHER TO BUFFER THE RESULTING URLS IN A LOCAL DATABASE
+_buffer = _configs['buffer_econbiz'];
+
+# WHETHER TO CHECK IF THE URL GOES ANYWHERE
 _check   = _configs['check_econbiz'];
+# WETHER TO REDO THE LINKING FOR DOCUMENTS THAT HAVE ALREADY BEEN LABELLED AS PROCESSED FOR THIS STEP BEFORE
 _recheck = _configs['recheck_econbiz'];
+# WHETHER TO TEST THE URL EVEN IF IT WAS ALREADY SEEN BEFORE
 _retest  = _configs['retest_econbiz']; # Recomputes the URL even if there is already one in the index, but this should be conditioned on _recheck anyways, so only for docs where has_.._url=False
+# WHETHER TO REPLACE A URL BY THE END OF A REDIRECT CHAIN
 _resolve = _configs['resolve_econbiz']; # Replaces the URL with the redirected URL if there should be redirection
 
-_refobjs = _configs['refobjs'];
-
+# REGEX FOR URLS AND DOIS
 URL = re.compile(_configs['regex_url']); #r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))(([\w.\-\/,@?^=%&:~+#]|([\.\-\/=] ))*[\w@?^=%&\/~+#])'
 DOI = re.compile(_configs['regex_doi']); #r'((https?:\/\/)?(www\.)?doi.org\/)?10.\d{4,9}\/[-._;()\/:A-Z0-9]+'
 #====================================================================================
-_index_m    = 'econbiz'; # Not actually required for crossref as the id is already the doi
+# NAME OF THE ELASTICSEARCH INDEX TO MATCH AGAINST
+_index_m    = 'econbiz';
+# FIELD NAME IN THE TARGET INDEX WHICH STORES THE ID FROM MATCHING
 _from_field = 'econbiz_id';
+# WHERE TO ADD THE URL FROM THE ABOVE TARGET INDEX FIELD
 _to_field   = 'econbiz_urls';
 #====================================================================================
 
+# TECHNICALLY REQUIRED TO STORE RESULTS FROM PARALLELIZED PROCESSING
 _temp_parallel_results = None;
 #-------------------------------------------------------------------------------------------------------------------------------------------------
 #-FUNCTIONS---------------------------------------------------------------------------------------------------------------------------------------
 
+# TECHNICALLY REQUIRED TO STORE RESULTS FROM PARALLELIZED PROCESSING
 def append_result(result):
     global _temp_parallel_results
     _temp_parallel_results.append(result);
 
+# OUTSOURCED URL RESOLUTION FOR PARALLEL PROCESSING
 def get_url_for(refobject,listindex,field,id_field,cur,USE_BUFFER): #TODO: If I want to store the resolved urls then I need to return the results and store them outside this function!
     url        = None;
     resolution = (None,None,None,);
     if id_field in refobject and refobject[id_field] and (_retest or not (_to_field[:-1] in refobject and refobject[_to_field[:-1]])):
-        opa_id                = refobject[id_field];
-        page                  = _client_m.search(index=_index_m, body={"query":{"term":{"id.keyword":opa_id}}} );
-        doi                   = page['hits']['hits'][0]['_source']['doi']  if len(page['hits']['hits'])>0 and 'doi'  in page['hits']['hits'][0]['_source'] else None;
-        urls                  = page['hits']['hits'][0]['_source']['urls'] if len(page['hits']['hits'])>0 and 'urls' in page['hits']['hits'][0]['_source'] else [];
-        url                   = doi2url(doi,cur,USE_BUFFER) if doi else urls[0] if urls else 'https://www.econbiz.de/Record/'+opa_id;
-        url                   = urls[0] if (not url) and urls else 'https://www.econbiz.de/Record/'+opa_id if not url else url;
-        url                   = check(url,_resolve,cur,5) if url else None;
-        resolution            = (doi,418,doi,) if not url else (doi,200,url,);
+        opa_id                = refobject[id_field]; # I commented the below out, because this should be done in update_target_dois.py
+        #page                  = _client_m.search(index=_index_m, body={"query":{"term":{"id.keyword":opa_id}}} ); #TODO: I dont understand why the below uses 'doi' or 'urls' 
+        #doi                   = page['hits']['hits'][0]['_source']['doi']  if len(page['hits']['hits'])>0 and 'doi'  in page['hits']['hits'][0]['_source'] else None;
+        #urls                  = page['hits']['hits'][0]['_source']['urls'] if len(page['hits']['hits'])>0 and 'urls' in page['hits']['hits'][0]['_source'] else [];
+        #url                   = doi2url(doi,cur,USE_BUFFER,_resolve) if doi else urls[0] if urls else 'https://www.econbiz.de/Record/'+opa_id;
+        url                   = 'https://www.econbiz.de/Record/'+opa_id; #urls[0] if (not url) and urls else 'https://www.econbiz.de/Record/'+opa_id if not url else url;
+        url                   = check(url,_resolve,cur,5) if _check else url if url and URL.match(url) else None;
+        resolution            = (url,200,url,) if url else (url,418,url,); #(doi,418,doi,) if not url else (doi,200,url,) if doi else (url,200,url,);
         refobject[field[:-1]] = url;
     return [[url] if url else [], refobject, resolution, listindex];
 
+# MAIN FUNCTION TO GET THE URL FOR A REFERENCE IF IT HAS A MATCH ID
 def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): # This actually gets the doi not the url 
     global _temp_parallel_results
     _temp_parallel_results = [];
@@ -91,8 +107,9 @@ def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): # This actually
 #-SCRIPT------------------------------------------------------------------------------------------------------------------------------------------
 
 _client   = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
-_client_m = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
+#_client_m = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
 
+# BATCH UPDATING THE LOCAL DOCUMENTS INDEX WITH THE URLS
 i = 0;
 for success, info in bulk(_client,search(_to_field,_from_field,_index,_recheck,get_url,_buffer),chunk_size=_chunk_size, request_timeout=_request_timeout):
     i += 1;
