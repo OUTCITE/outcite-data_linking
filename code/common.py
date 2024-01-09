@@ -43,7 +43,7 @@ def check(url,RESOLVE=False,cur=None,timeout=5,USE_BUFFER=None):
     status = None;
     try:
         status = None;
-        if cur and USE_BUFFER=='r' or USE_BUFFER=='rw': # IF cur is None then neither read nor write, if USE_BUFFER is False, then only write #TODO: Maybe change to 'r', 'w' and 'rw' to allow all combinations
+        if cur and USE_BUFFER=='r' or USE_BUFFER=='rw': # r means that we only use buffer to read not write, rw means to read and write and w should mean only write to buffer
             print('Trying to read resolution for',url,'from DB...')
             rows    = cur.execute("SELECT status,resolve FROM urls WHERE url=?",(url,)).fetchall();
             status  = rows[0][0] if rows and rows[0] else None;

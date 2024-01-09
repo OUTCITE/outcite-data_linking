@@ -81,7 +81,7 @@ def get_url(refobjects,field,id_field,cur=None,USE_BUFFER=None): #TODO: This not
 
 # CONNECTION TO THE LOCAL ELASTICSEARCH INSTANCE WHERE THE INDEX IS
 _client   = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
-#_client_m = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
+_client_m = ES(['http://localhost:9200'],timeout=60);#ES(['localhost'],scheme='http',port=9200,timeout=60);
 
 # BATCH UPDATING THE LOCAL DOCUMENTS INDEX WITH THE URLS
 i = 0;
