@@ -1,7 +1,9 @@
 /code/__pycache__/
-code/*_old.py
-*.err
-*.out
-*.db
-*.db-journal
-code/configs_custom.json
+/code/*_old.py
+/*.err
+/*.out
+/*.db
+/*.db-journal
+/logs/
+/resources/
+/code/configs_custom.json
